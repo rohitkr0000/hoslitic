@@ -1,0 +1,4 @@
+# Local/server secrets and environment files
+config/config.php
+*.log
+.claude/
