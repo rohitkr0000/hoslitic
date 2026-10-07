@@ -60,6 +60,28 @@ $icon = [
   </div>
 </section>
 
+<section class="screen" id="mission">
+  <div class="container mission">
+    <div>
+      <span class="kicker">Our mission</span>
+      <h2>Make everyday movement easier</h2>
+      <p class="lead">Joint comfort matters at every age: for the long commute, the weekend game, the walk with grandchildren. We want a trusted Ayurvedic option to be simple to find, clear to understand and easy to order.</p>
+      <ul class="checks">
+        <li>Plain-language product information and honest guidance</li>
+        <li>Transparent pricing, GST included, no hidden charges</li>
+        <li>Real people to answer questions before and after you buy</li>
+      </ul>
+      <a class="btn btn-primary" href="<?= e(url('shop.php')) ?>">Explore Jointex</a>
+    </div>
+    <div class="mission-cards">
+      <div class="mc"><b>Ayurvedic</b><span>Traditional herbal approach</span></div>
+      <div class="mc"><b>Vegetarian</b><span>Easy-to-take capsules</span></div>
+      <div class="mc"><b>GMP &amp; ISO</b><span>Certified facility</span></div>
+      <div class="mc"><b>All India</b><span>Delivery with tracking</span></div>
+    </div>
+  </div>
+</section>
+
 <section class="screen" id="company">
   <div class="container">
     <div class="screen-head">
@@ -88,4 +110,9 @@ $icon = [
     </div>
   </div>
 </section>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php
+sec_delivery_steps();
+sec_faq(4);
+sec_help();
+require __DIR__ . '/includes/footer.php';
+

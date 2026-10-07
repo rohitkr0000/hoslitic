@@ -1,5 +1,6 @@
 <?php
 // Expects optional $pageTitle, $metaDescription, $activeNav
+require_once __DIR__ . '/sections.php';
 $siteName = setting('site_name', 'Holistic Global Services');
 $nameParts = explode(' ', $siteName, 2);
 $activeNav = $activeNav ?? '';
@@ -9,17 +10,15 @@ function product_card(array $p): void
 {
     $off = discount_percent($p); ?>
     <article class="p-card">
-      <?php if ($off): ?><span class="off-tag"><?= $off ?>% OFF</span><?php endif; ?>
       <a class="thumb" href="<?= e(url('product.php?slug=' . urlencode($p['slug']))) ?>">
+        <?php if ($off): ?><span class="off-tag"><?= $off ?>% OFF</span><?php endif; ?>
         <img src="<?= e(product_image_url($p['image'])) ?>" alt="<?= e($p['name']) ?>" loading="lazy">
+        <?php if ($p['review_count']): ?><span class="rate-pill">★ <?= e($p['avg_rating']) ?> <i>| <?= (int) $p['review_count'] ?></i></span><?php endif; ?>
       </a>
       <div class="body">
         <span class="pack"><?= e($p['pack_label']) ?></span>
         <h3><a href="<?= e(url('product.php?slug=' . urlencode($p['slug']))) ?>"><?= e($p['name']) ?></a></h3>
-        <?php if ($p['review_count']): ?>
-          <div class="rating-line"><?= stars((float) $p['avg_rating']) ?> <?= e($p['avg_rating']) ?> (<?= (int) $p['review_count'] ?>)</div>
-        <?php endif; ?>
-        <p class="muted" style="margin:0"><?= e($p['short_description']) ?></p>
+        <p class="muted desc"><?= e($p['short_description']) ?></p>
         <div class="price">
           <span class="now"><?= money($p['price']) ?></span>
           <?php if ($off): ?><span class="was"><?= money($p['mrp']) ?></span><span class="save">Save <?= money($p['mrp'] - $p['price']) ?></span><?php endif; ?>
@@ -29,8 +28,8 @@ function product_card(array $p): void
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="add">
             <input type="hidden" name="product_id" value="<?= (int) $p['id'] ?>">
-            <button class="btn btn-dark" type="submit">Add to cart</button>
             <button class="btn btn-primary" type="submit" name="buy_now" value="1">Buy now</button>
+            <button class="btn btn-cart" type="submit" aria-label="Add to cart" title="Add to cart"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg></button>
           </form>
         <?php else: ?>
           <p class="stock-out" style="margin:auto 0 0">Currently out of stock</p>
@@ -54,6 +53,7 @@ function product_card(array $p): void
 <link rel="stylesheet" href="<?= e(url('assets/css/motion.css')) ?>?v=8">
 <link rel="stylesheet" href="<?= e(url('assets/css/fx.css')) ?>?v=6">
 <link rel="stylesheet" href="<?= e(url('assets/css/screens.css')) ?>?v=8">
+<link rel="stylesheet" href="<?= e(url('assets/css/theme.css')) ?>?v=8">
 <script>
 document.documentElement.classList.add('js');
 // Safety net: never leave headings hidden if the animation script fails to load.
@@ -62,11 +62,12 @@ setTimeout(function () { if (!document.querySelector('.words')) { document.docum
 <noscript><style>html.js main :is(h1, h2) { visibility: visible !important; }</style></noscript>
 </head>
 <body<?= !empty($bodyClass) ? ' class="' . e($bodyClass) . '"' : '' ?>>
-<?php if (setting('announcement') !== ''): ?>
-  <div class="announce"><?= e(setting('announcement')) ?></div>
-<?php endif; ?>
+<div class="announce"><div class="announce-track">
+  <?php $ann = setting('announcement') !== '' ? setting('announcement') : 'Get extra discount on online payment*'; for ($i = 0; $i < 6; $i++) { echo '<span>' . e($ann) . '</span><span class="dot">✦</span><span>Cash on Delivery available</span><span class="dot">✦</span>'; } ?>
+</div></div>
 <header class="site-header">
   <div class="container nav">
+    <button class="nav-toggle" type="button" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <a class="brand" href="<?= e(url('')) ?>" aria-label="<?= e($siteName) ?> home">
       <span class="logo-mark"><img src="<?= e(url('assets/img/logo.jpg')) ?>" alt=""></span>
       <span class="brand-text"><b><?= e(strtoupper($nameParts[0])) ?></b><span><?= e(strtoupper($nameParts[1] ?? '')) ?></span></span>
@@ -74,18 +75,18 @@ setTimeout(function () { if (!document.querySelector('.words')) { document.docum
     <ul class="nav-links">
       <li><a class="<?= $activeNav === 'home' ? 'active' : '' ?>" href="<?= e(url('')) ?>">Home</a></li>
       <li><a class="<?= $activeNav === 'shop' ? 'active' : '' ?>" href="<?= e(url('shop.php')) ?>">Shop</a></li>
-      <li><a class="<?= $activeNav === 'about' ? 'active' : '' ?>" href="<?= e(url('about.php')) ?>">About</a></li>
+      <li><a class="<?= $activeNav === 'about' ? 'active' : '' ?>" href="<?= e(url('about.php')) ?>">Our Story</a></li>
       <li><a class="<?= $activeNav === 'track' ? 'active' : '' ?>" href="<?= e(url('track-order.php')) ?>">Track Order</a></li>
       <li><a class="<?= $activeNav === 'contact' ? 'active' : '' ?>" href="<?= e(url('contact.php')) ?>">Contact</a></li>
     </ul>
     <div class="nav-actions">
+      <a class="icon-btn" href="<?= e(url('shop.php')) ?>" aria-label="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></a>
       <?php if ($user): ?>
-        <a class="hide-sm" href="<?= e(url('account.php')) ?>">Hi, <?= e(explode(' ', $user['name'])[0]) ?></a>
+        <a class="icon-btn" href="<?= e(url('account.php')) ?>" aria-label="My account"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4.5-6 8-6s7 2 8 6"/></svg></a>
       <?php else: ?>
-        <a class="hide-sm" href="<?= e(url('login.php')) ?>">Login</a>
+        <a class="icon-btn" href="<?= e(url('login.php')) ?>" aria-label="Login"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4.5-6 8-6s7 2 8 6"/></svg></a>
       <?php endif; ?>
-      <a class="cart-link" href="<?= e(url('cart.php')) ?>">Cart <span class="cart-count"><?= cart_count() ?></span></a>
-      <button class="nav-toggle" type="button" aria-label="Menu">☰</button>
+      <a class="icon-btn cart-link" href="<?= e(url('cart.php')) ?>" aria-label="Cart"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 016 0v2"/></svg><span class="cart-count"><?= cart_count() ?></span></a>
     </div>
   </div>
 </header>

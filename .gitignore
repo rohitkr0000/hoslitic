@@ -2,3 +2,4 @@
 config/config.php
 *.log
 .claude/
+config/*.bak

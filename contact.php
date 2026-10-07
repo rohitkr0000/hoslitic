@@ -29,6 +29,17 @@ $activeNav = 'contact';
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="page-head"><div class="container"><?= breadcrumbs(['Contact us' => null]) ?><h1>Contact us</h1><p>Questions about your order or the product? We are happy to help.</p></div></section>
+<section class="screen" style="padding-bottom:0!important">
+  <div class="container quick">
+    <?php $__wa = preg_replace('/\D+/', '', setting('whatsapp')); ?>
+    <?php if (setting('phone') !== ''): ?><a class="quick-card" href="tel:<?= e(preg_replace('/[^\d+]/', '', setting('phone'))) ?>"><?= sec_icon('phone') ?><b>Call us</b><span><?= e(setting('phone')) ?></span></a><?php endif; ?>
+    <?php if ($__wa !== ''): ?><a class="quick-card" href="https://wa.me/<?= e($__wa) ?>" target="_blank" rel="noopener"><?= sec_icon('chat') ?><b>WhatsApp</b><span>Chat with us</span></a><?php endif; ?>
+    <?php if (setting('email') !== ''): ?><a class="quick-card" href="mailto:<?= e(setting('email')) ?>"><?= sec_icon('mail') ?><b>Email</b><span><?= e(setting('email')) ?></span></a><?php endif; ?>
+    <a class="quick-card" href="<?= e(url('track-order.php')) ?>"><?= sec_icon('box') ?><b>Track order</b><span>Where is my parcel?</span></a>
+    <a class="quick-card" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=<?= e(urlencode($mapQuery)) ?>"><?= sec_icon('pin') ?><b>Visit us</b><span>Get directions</span></a>
+    <a class="quick-card" href="#faq"><?= sec_icon('check') ?><b>Quick answers</b><span>Read the FAQs</span></a>
+  </div>
+</section>
 <section class="screen">
   <div class="container contact-grid">
     <form class="card" method="post">
@@ -64,4 +75,7 @@ require __DIR__ . '/includes/header.php';
     </div>
   </div>
 </section>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php
+sec_faq(5);
+require __DIR__ . '/includes/footer.php';
+

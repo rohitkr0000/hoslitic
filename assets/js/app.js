@@ -65,3 +65,20 @@ document.querySelectorAll('.gallery-thumbs button').forEach(function (t) {
   document.querySelectorAll('input[name=payment_method]').forEach(function (r) { r.addEventListener('change', update); });
   update();
 })();
+
+// Homepage hero slider
+(function () {
+  var box = document.querySelector('.hslider');
+  if (!box) { return; }
+  var slides = box.querySelectorAll('.hs-slide'), dots = box.querySelectorAll('.hs-dots button'), i = 0, timer;
+  function go(n) {
+    i = (n + slides.length) % slides.length;
+    slides.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    dots.forEach(function (d, k) { d.classList.toggle('on', k === i); });
+  }
+  function auto() { clearInterval(timer); timer = setInterval(function () { go(i + 1); }, 5500); }
+  box.querySelector('.prev').addEventListener('click', function () { go(i - 1); auto(); });
+  box.querySelector('.next').addEventListener('click', function () { go(i + 1); auto(); });
+  dots.forEach(function (d, k) { d.addEventListener('click', function () { go(k); auto(); }); });
+  auto();
+})();

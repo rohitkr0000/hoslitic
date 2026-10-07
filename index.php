@@ -11,59 +11,102 @@ $gallery = $featured ? product_images((int) $featured['id']) : [];
 $reviews = rows("SELECT r.*, p.name AS product_name FROM reviews r JOIN products p ON p.id = r.product_id WHERE r.status = 'approved' ORDER BY r.rating DESC, r.id DESC LIMIT 3");
 $faqs = rows('SELECT * FROM faqs WHERE is_active = 1 ORDER BY sort_order, id');
 $activeNav = 'home';
-$heroScene = true; // footer loads the 3D hero scripts
+
 $heroParts = explode('. ', setting('hero_title'), 2); // "Move freely. Live fully." → second sentence highlighted
+$allImgs = [];
+foreach ($products as $__p) { foreach (product_images((int) $__p['id']) as $__f) { $allImgs[] = $__f; } }
 $ribbon = ['Ayurvedic formulation', 'GMP certified facility', 'ISO certified', 'Vegetarian capsules', 'Cash on Delivery', 'Secure online payment', 'Delivery across India'];
 require __DIR__ . '/includes/header.php';
 ?>
-<section class="hero screen" id="hero">
-  <div class="container hero-grid">
-    <div>
-      <span class="kicker"><?= e(setting('hero_kicker')) ?></span>
-      <h1><?= e($heroParts[0]) . (isset($heroParts[1]) ? '. <em>' . e($heroParts[1]) . '</em>' : '') ?></h1>
-      <p class="rotator">Support for <b data-rotate="comfortable joints|easy, flexible movement|an active lifestyle|everyday wellness"></b></p>
-      <p class="lead"><?= e(setting('hero_text')) ?></p>
-      <div class="hero-cta">
-        <?php if ($featured): ?>
-          <a class="btn btn-primary" href="<?= e(url('product.php?slug=' . urlencode($featured['slug']))) ?>">Shop Jointex – <?= money($featured['price']) ?></a>
-        <?php endif; ?>
-        <a class="btn btn-ghost" href="#how">How to use</a>
-      </div>
-      <ul class="hero-trust">
-        <li>Ayurvedic formulation</li>
-        <li>GMP &amp; ISO certified facility</li>
-        <li>Vegetarian capsules</li>
-      </ul>
-    </div>
-    <?php if ($featured): ?>
-      <div class="hero-art">
-        <div class="tilt">
-          <div class="floaty"><img src="<?= e(product_image_url($featured['image'])) ?>" alt="<?= e($featured['name']) ?>"></div>
-          <canvas aria-hidden="true"></canvas>
-          <div class="hero-tag"><?= e($featured['pack_label']) ?><small>1 capsule, twice a day</small></div>
+<?php
+$buy = $featured ? url('product.php?slug=' . urlencode($featured['slug'])) : url('shop.php');
+$slides = [
+  ['img' => $gallery[0] ?? null, 'k' => setting('hero_kicker'), 't' => setting('hero_title'), 'p' => setting('hero_text'), 'cta' => 'Shop now', 'href' => $buy],
+  ['img' => $allImgs[1] ?? ($gallery[0] ?? null), 'k' => 'Rooted in Ayurveda', 't' => 'Herbs your grandmother would trust.', 'p' => 'A traditional herbal approach in an easy vegetarian capsule.', 'cta' => 'See ingredients', 'href' => $buy],
+  ['img' => $allImgs[3] ?? ($gallery[0] ?? null), 'k' => 'Simple routine', 't' => 'One capsule. Twice a day.', 'p' => 'Take after breakfast and dinner with normal water.', 'cta' => 'View all products', 'href' => url('shop.php')],
+];
+$concerns = [
+  ['Joint Comfort', $allImgs[0] ?? null, $buy],
+  ['Mobility &amp; Flexibility', $allImgs[2] ?? null, $buy],
+  ['Daily Wellness', $allImgs[4] ?? null, url('shop.php')],
+  ['Shop Combos', $allImgs[5] ?? null, url('shop.php')],
+];
+?>
+<section class="hslider" id="hero" aria-roledescription="carousel">
+  <div class="hs-track">
+    <?php foreach ($slides as $i => $sl): ?>
+      <div class="hs-slide<?= $i === 0 ? ' on' : '' ?>">
+        <div class="container hs-grid">
+          <div class="hs-copy">
+            <span class="pill"><?= e($sl['k']) ?></span>
+            <?= $i === 0 ? '<h1>' : '<h2 class="hs-title">' ?><?= e($sl['t']) ?><?= $i === 0 ? '</h1>' : '</h2>' ?>
+            <p><?= e($sl['p']) ?></p>
+            <div class="hs-cta">
+              <a class="btn btn-primary" href="<?= e($sl['href']) ?>"><?= e($sl['cta']) ?></a>
+              <?php if ($i === 0 && $featured): ?><span class="hs-price">from <b><?= money($featured['price']) ?></b></span><?php endif; ?>
+            </div>
+          </div>
+          <?php if ($sl['img']): ?>
+            <a class="hs-pic" href="<?= e($sl['href']) ?>"><img src="<?= e(product_image_url($sl['img'])) ?>" alt="" <?= $i ? 'loading="lazy"' : '' ?>></a>
+          <?php endif; ?>
         </div>
       </div>
-    <?php endif; ?>
+    <?php endforeach; ?>
   </div>
-  <div class="ribbon-wrap" aria-hidden="true">
-    <div class="ribbon"><div class="ribbon-track">
-      <?php for ($i = 0; $i < 4; $i++) { foreach ($ribbon as $word) { echo '<span>' . e($word) . '</span>'; } } ?>
-    </div></div>
+  <button class="hs-nav prev" type="button" aria-label="Previous">‹</button>
+  <button class="hs-nav next" type="button" aria-label="Next">›</button>
+  <div class="hs-dots"><?php foreach ($slides as $i => $sl): ?><button type="button" class="<?= $i === 0 ? 'on' : '' ?>" aria-label="Slide <?= $i + 1 ?>"></button><?php endforeach; ?></div>
+</section>
+
+<section class="badges">
+  <div class="container badges-row">
+    <?php foreach (['Ayurvedic formulation', 'GMP certified', 'ISO certified', 'Vegetarian capsules', 'Cash on Delivery', 'Secure payments'] as $bt): ?><span><?= e($bt) ?></span><?php endforeach; ?>
   </div>
 </section>
 
-<section class="screen" id="packs">
+<section class="pillars">
+  <div class="container pillars-row">
+    <div class="pillar"><svg viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-14 14z"/><path d="M5 19c3-5 6-8 10-10"/></svg><b>Ancient Wisdom, Modern Formulation</b></div>
+    <div class="pillar"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><b>Made in a GMP &amp; ISO certified facility</b></div>
+    <div class="pillar"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><b>Made to support your wellness journey</b></div>
+  </div>
+</section>
+
+<section class="screen" id="concerns">
+  <div class="container">
+    <div class="screen-head"><span class="kicker">Shop by concern</span><h2>What are you looking for?</h2></div>
+    <div class="concerns">
+      <?php foreach ($concerns as $c): ?>
+        <a class="concern" href="<?= e($c[2]) ?>">
+          <?php if ($c[1]): ?><img src="<?= e(product_image_url($c[1])) ?>" alt="" loading="lazy"><?php endif; ?>
+          <span class="c-label"><b><?= $c[0] ?></b><i>Shop now →</i></span>
+        </a>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+
+<section class="screen tint" id="packs">
   <div class="container">
     <div class="screen-head">
-      <span class="kicker">Choose your pack</span>
-      <h2>Jointex, delivered to your door</h2>
+      <span class="kicker">Best sellers</span>
+      <h2>Our most loved products</h2>
       <p class="lead">Prices include GST. Pay online or choose Cash on Delivery.</p>
     </div>
     <div class="products four">
       <?php foreach ($products as $p) { product_card($p); } ?>
     </div>
     <?php if (!$products): ?><p class="muted center">Products will appear here once added from the admin panel.</p><?php endif; ?>
-    <p class="center" style="margin:16px 0 0"><a class="btn btn-ghost btn-sm" href="<?= e(url('shop.php')) ?>">View all products</a></p>
+    <p class="center" style="margin:22px 0 0"><a class="btn btn-ghost btn-sm" href="<?= e(url('shop.php')) ?>">View all products</a></p>
+  </div>
+</section>
+
+<section class="statbar">
+  <div class="container statbar-row">
+    <div><b>60</b><span>capsules in the large bottle</span></div>
+    <div><b>2</b><span>capsules a day, after meals</span></div>
+    <div><b>100%</b><span>Ayurvedic herbal formula</span></div>
+    <div><b>1–2</b><span>business days to dispatch</span></div>
   </div>
 </section>
 
@@ -85,7 +128,7 @@ require __DIR__ . '/includes/header.php';
   </div>
 </section>
 
-<section class="screen dark-screen" id="how">
+<section class="screen sage-screen" id="how">
   <div class="container">
     <div class="screen-head">
       <span class="kicker">How to use</span>
@@ -117,20 +160,21 @@ require __DIR__ . '/includes/header.php';
 </section>
 <?php endif; ?>
 
-<section class="screen" id="faq">
+<?php if (count($allImgs) > 2): ?>
+<section class="screen" id="gallery">
   <div class="container">
-    <?php if ($faqs): ?>
-      <div class="screen-head"><span class="kicker">Questions</span><h2>Good to know</h2></div>
-      <div class="faq cols">
-        <?php foreach ($faqs as $f): ?>
-          <details><summary><?= e($f['question']) ?></summary><p><?= nl2br(e($f['answer'])) ?></p></details>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-    <div class="cta">
-      <div><h2>Ready to get started?</h2><p>Order today — dispatched within 1–2 business days.</p></div>
-      <a class="btn btn-dark" href="<?= e(url('shop.php')) ?>">Shop now</a>
+    <div class="screen-head"><span class="kicker">Inside the pack</span><h2>See Jointex up close</h2></div>
+    <div class="photo-grid">
+      <?php foreach (array_slice($allImgs, 0, 6) as $gi): ?><a href="<?= e($buy) ?>"><img src="<?= e(product_image_url($gi)) ?>" alt="Jointex" loading="lazy"></a><?php endforeach; ?>
     </div>
   </div>
 </section>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php endif; ?>
+
+<?php
+sec_usps('Why customers shop with us');
+sec_delivery_steps();
+sec_faq(6);
+sec_help();
+sec_cta();
+require __DIR__ . '/includes/footer.php';

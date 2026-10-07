@@ -50,14 +50,14 @@ $wa = preg_replace('/\D+/', '', setting('whatsapp'));
     <?php endif; ?>
     <div class="foot-bottom">
       <span>© <?= date('Y') ?> <?= e(setting('site_name')) ?>. All rights reserved.</span>
-      <span>Secure payments · Delivery across India</span>
+      <span class="pay-chips"><i>UPI</i><i>Cards</i><i>Net Banking</i><i>COD</i></span>
     </div>
   </div>
 </footer>
 <?php if ($wa !== ''): ?>
   <a class="wa-float" href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">✆</a>
 <?php endif; ?>
-<script src="<?= e(url('assets/js/app.js')) ?>?v=4"></script>
+<script src="<?= e(url('assets/js/app.js')) ?>?v=5"></script>
 <script src="<?= e(url('assets/js/motion.js')) ?>?v=4"></script>
 <script src="<?= e(url('assets/js/fx.js')) ?>?v=3"></script>
 <?php if (!empty($heroScene)): ?>

@@ -46,4 +46,8 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
   </div>
 </section>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php
+sec_delivery_steps();
+sec_help();
+require __DIR__ . '/includes/footer.php';
+

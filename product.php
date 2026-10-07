@@ -152,4 +152,8 @@ require __DIR__ . '/includes/header.php';
   </div>
 </section>
 <?php endif; ?>
-<?php require __DIR__ . '/includes/footer.php'; ?>
+<?php
+sec_usps();
+sec_faq(4);
+require __DIR__ . '/includes/footer.php';
+
