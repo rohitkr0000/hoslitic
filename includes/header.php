@@ -37,6 +37,19 @@ function product_card(array $p): void
       </div>
     </article>
 <?php }
+
+function blog_card(array $bp): void
+{
+    $href = url('blog.php?slug=' . urlencode($bp['slug'])); ?>
+    <article class="blog-card">
+      <a class="thumb" href="<?= e($href) ?>"><img src="<?= e(media_url($bp['image'])) ?>" alt="" loading="lazy"></a>
+      <div class="body">
+        <time><?= e(date('d M Y', strtotime($bp['created_at']))) ?></time>
+        <h3><a href="<?= e($href) ?>"><?= e($bp['title']) ?></a></h3>
+        <?php if ($bp['excerpt'] !== ''): ?><p class="muted"><?= e($bp['excerpt']) ?></p><?php endif; ?>
+      </div>
+    </article>
+<?php }
 ?>
 <!doctype html>
 <html lang="en">
@@ -51,9 +64,9 @@ function product_card(array $p): void
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= e(url('assets/css/style.css')) ?>?v=9">
 <link rel="stylesheet" href="<?= e(url('assets/css/motion.css')) ?>?v=8">
-<link rel="stylesheet" href="<?= e(url('assets/css/fx.css')) ?>?v=6">
+<link rel="stylesheet" href="<?= e(url('assets/css/fx.css')) ?>?v=7">
 <link rel="stylesheet" href="<?= e(url('assets/css/screens.css')) ?>?v=8">
-<link rel="stylesheet" href="<?= e(url('assets/css/theme.css')) ?>?v=8">
+<link rel="stylesheet" href="<?= e(url('assets/css/theme.css')) ?>?v=17">
 <script>
 document.documentElement.classList.add('js');
 // Safety net: never leave headings hidden if the animation script fails to load.
@@ -74,7 +87,19 @@ setTimeout(function () { if (!document.querySelector('.words')) { document.docum
     </a>
     <ul class="nav-links">
       <li><a class="<?= $activeNav === 'home' ? 'active' : '' ?>" href="<?= e(url('')) ?>">Home</a></li>
-      <li><a class="<?= $activeNav === 'shop' ? 'active' : '' ?>" href="<?= e(url('shop.php')) ?>">Shop</a></li>
+      <li><a class="<?= $activeNav === 'shop' ? 'active' : '' ?>" href="<?= e(url('shop.php')) ?>">All Products</a></li>
+      <?php $navCats = rows('SELECT name, slug FROM categories WHERE is_active = 1 ORDER BY sort_order, name'); ?>
+      <?php if ($navCats): ?>
+        <li class="has-sub">
+          <a href="<?= e(url('shop.php')) ?>" aria-haspopup="true">Categories <span class="caret">▾</span></a>
+          <ul class="sub-menu">
+            <?php foreach ($navCats as $nc): ?>
+              <li><a class="<?= ($_GET['cat'] ?? '') === $nc['slug'] ? 'active' : '' ?>" href="<?= e(url('shop.php?cat=' . urlencode($nc['slug']))) ?>"><?= e($nc['name']) ?></a></li>
+            <?php endforeach; ?>
+          </ul>
+        </li>
+      <?php endif; ?>
+      <li><a class="<?= $activeNav === 'blog' ? 'active' : '' ?>" href="<?= e(url('blog.php')) ?>">Blog</a></li>
       <li><a class="<?= $activeNav === 'about' ? 'active' : '' ?>" href="<?= e(url('about.php')) ?>">Our Story</a></li>
       <li><a class="<?= $activeNav === 'track' ? 'active' : '' ?>" href="<?= e(url('track-order.php')) ?>">Track Order</a></li>
       <li><a class="<?= $activeNav === 'contact' ? 'active' : '' ?>" href="<?= e(url('contact.php')) ?>">Contact</a></li>

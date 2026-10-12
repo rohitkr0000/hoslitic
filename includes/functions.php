@@ -176,6 +176,21 @@ function product_image_url(?string $filename): string
     return url('assets/img/placeholder.svg');
 }
 
+// Images uploaded for banners, categories, blog posts and Instagram tiles.
+function media_url(?string $filename): string
+{
+    if ($filename && is_file(ROOT_PATH . '/uploads/media/' . $filename)) {
+        return url('uploads/media/' . rawurlencode($filename));
+    }
+    return url('assets/img/placeholder.svg');
+}
+
+// Admin-entered link: a full URL is used as is, anything else is a path inside the site.
+function site_link(string $link): string
+{
+    return preg_match('#^(https?:)?//#i', $link) ? $link : url($link);
+}
+
 function products_with_image(string $where = 'p.is_active = 1', array $params = []): array
 {
     return rows(

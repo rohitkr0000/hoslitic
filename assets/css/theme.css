@@ -20,7 +20,6 @@ h1, h2, h3 { color: var(--forest); }
 
 /* turn off dark-theme effects */
 .fx-dot, .fx-ring, .fx-spot, .fx-glare, .fx-progress { display: none !important; }
-html.fx-cursor, html.fx-cursor a, html.fx-cursor button, html.fx-cursor summary { cursor: auto !important; }
 .fx-tilt.tilting { transform: none !important; box-shadow: var(--shadow) !important; }
 .btn::before { display: none; }
 html { scroll-snap-type: none !important; }
@@ -628,18 +627,82 @@ html.js .page-head h1:not(.words) { visibility: visible !important; }
 
 .quick { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 
-/* ---------- Custom leaf cursor (Ayurvedic theme) ---------- */
-/* default: green leaf, tip is the click point */
-html, body {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M3 3C19 3 29 12 28 28C12 28 3 19 3 3Z' fill='%232f7a43' stroke='%23ffffff' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='M4.5 4.5L22 22' stroke='%23ffffff' stroke-width='1.4' stroke-linecap='round' opacity='.85'/%3E%3C/svg%3E") 3 3, auto !important;
+/* ---------- Footer: brand + four link columns ---------- */
+@media (min-width: 1000px) { .foot-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr 1.2fr; gap: 30px; } }
+.foot-social { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .88rem; }
+.foot-social b { width: 100%; color: #fff; font: 700 .8rem var(--sans); text-transform: uppercase; letter-spacing: .14em; }
+
+/* ---------- Instagram tiles ---------- */
+.insta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 26px; }
+.insta-grid a { display: block; aspect-ratio: 1; border-radius: 18px; overflow: hidden; background: var(--sage); }
+.insta-grid img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s; }
+.insta-grid a:hover img { transform: scale(1.06); }
+
+/* ---------- Blog ---------- */
+.blog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 26px; text-align: left; }
+.blog-card { background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 6px 24px rgba(27, 77, 46, .09); display: flex; flex-direction: column; }
+.blog-card .thumb { display: block; aspect-ratio: 16 / 10; overflow: hidden; background: var(--sage); }
+.blog-card .thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s; }
+.blog-card:hover .thumb img { transform: scale(1.05); }
+.blog-card .body { padding: 16px 20px 20px; display: grid; gap: 6px; }
+.blog-card time { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.blog-card h3 { margin: 0; font-size: 1.15rem; line-height: 1.35; }
+.blog-card h3 a { color: var(--forest); text-decoration: none; }
+.blog-card p { margin: 0; font-size: .9rem; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.blog-post img { max-width: 100%; height: auto; border-radius: 14px; }
+.blog-cover { width: 100%; margin-bottom: 22px; }
+@media (max-width: 900px) { .blog-grid { grid-template-columns: repeat(2, 1fr); } .insta-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .blog-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Header: Categories dropdown ---------- */
+.nav-links .has-sub { position: relative; }
+.nav-links .caret { font-size: .7em; margin-left: 2px; }
+.nav-links .sub-menu { list-style: none; margin: 0; padding: 8px; display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); min-width: 210px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 30px rgba(0, 0, 0, .1); z-index: 60; }
+.nav-links .has-sub:hover .sub-menu, .nav-links .has-sub:focus-within .sub-menu { display: block; }
+.nav-links .sub-menu a { display: block; padding: 9px 12px; border-radius: 8px; white-space: nowrap; }
+.nav-links .sub-menu a::after { display: none; }
+.nav-links .sub-menu a:hover, .nav-links .sub-menu a.active { background: var(--cream); }
+@media (max-width: 960px) {
+  .nav-links .sub-menu { display: block; position: static; transform: none; min-width: 0; border: 0; box-shadow: none; padding: 0 0 6px 14px; background: none; }
+  .nav-links .sub-menu a { padding: 8px 0; }
 }
-/* clickable: larger gold leaf */
-html.fx-cursor a, html.fx-cursor button, html.fx-cursor summary, html.fx-cursor label, html.fx-cursor select,
-a, button, summary, label, select, [role="button"], .p-card, .concern, .photo-grid a, .hs-pic {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Ccircle cx='24' cy='24' r='10' fill='%23b08d4a' opacity='.18'/%3E%3Cpath d='M3 3C21 3 32 13 31 31C13 31 3 21 3 3Z' fill='%23b08d4a' stroke='%23ffffff' stroke-width='1.8' stroke-linejoin='round'/%3E%3Cpath d='M4.5 4.5L25 25' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E") 3 3, pointer !important;
+
+/* ---------- Revision 4: full-width image banner hero ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.hslider.full { background: var(--cream); }
+.hslider.full .hs-track { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+.hslider.full .hs-slide { display: block; position: relative; grid-area: 1 / 1; }
+.hslider.full .hs-slide:not(.on) { position: absolute; inset: 0; overflow: hidden; }
+.hs-banner, .hs-banner picture { display: block; }
+.hslider.full .hs-banner img { display: block; position: static; width: 100%; height: auto; max-height: min(78vh, 720px); object-fit: cover; transform: none; }
+.hs-over { position: absolute; inset: 0; display: flex; align-items: center; pointer-events: none; background: linear-gradient(90deg, rgba(253, 251, 247, .95) 0%, rgba(253, 251, 247, .82) 34%, rgba(253, 251, 247, 0) 62%); }
+.hs-over .hs-copy { pointer-events: auto; max-width: 440px; }
+.hs-over .hs-copy > * { max-width: 100%; }
+.hslider.full .hs-nav { top: 50%; bottom: auto; transform: translateY(-50%); }
+.hslider.full .hs-nav.prev { left: 16px; right: auto; }
+.hslider.full .hs-nav.next { right: 16px; }
+.hslider.full .hs-nav:hover { transform: translateY(-50%) scale(1.1); }
+.hslider.full .hs-dots { justify-content: center; padding-left: 0; bottom: 14px; }
+.hslider.single .hs-nav, .hslider.single .hs-dots { display: none; }
+@media (max-width: 760px) {
+  .hslider.full .hs-banner img { max-height: none; }
+  .hslider.full .hs-slide.has-text .hs-banner img { aspect-ratio: 16 / 10; }
+  .hs-over { position: static; background: none; padding: 22px 0 50px; }
+  .hslider.full .hs-slide:not(.on) .hs-over { display: none; }
 }
-/* text fields keep the I-beam so typing stays obvious */
-input[type=text], input[type=email], input[type=tel], input[type=password], input[type=number], input[type=search], input[type=date], textarea,
-html.fx-cursor input, html.fx-cursor textarea { cursor: text !important; }
-button[disabled], .btn[disabled] { cursor: not-allowed !important; }
-@media (hover: none), (pointer: coarse) { html, body, a, button { cursor: auto !important; } }
+
+/* Built-in carousel slides share one shape so the banner height never jumps between slides. */
+.hslider.full .hs-slide.builtin .hs-banner img { aspect-ratio: 2 / 1; }
+.hslider.full .hs-slide.contain .hs-banner { position: relative; overflow: hidden; }
+.hslider.full .hs-slide.contain .hs-banner::before { content: ''; position: absolute; inset: -40px; background: var(--bg) center / cover no-repeat; filter: blur(34px) saturate(1.1); }
+.hslider.full .hs-slide.contain .hs-banner img { position: relative; object-fit: contain; object-position: center; }
+@media (max-width: 760px) {
+  .hslider.full .hs-slide.builtin .hs-banner img { aspect-ratio: 16 / 10; }
+  .hslider.full .hs-slide.contain .hs-banner img { object-position: center; }
+}
+
+/* Hero carousel scrolls sideways from slide to slide instead of fading. */
+.hslider.full .hs-track { display: flex; transition: transform .7s cubic-bezier(.2, .8, .2, 1); }
+.hslider.full .hs-track .hs-slide, .hslider.full .hs-track .hs-slide:not(.on) { position: relative; inset: auto; flex: 0 0 100%; min-width: 0; opacity: 1; visibility: visible; transition: none; }
+@media (max-width: 760px) { .hslider.full .hs-slide:not(.on) .hs-over { display: flex; } }
+@media (prefers-reduced-motion: reduce) { .hslider.full .hs-track { transition: none; } }

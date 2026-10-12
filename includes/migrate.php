@@ -95,7 +95,7 @@ function return_statuses(): array
 
 function migrate_database(): void
 {
-    if ((int) setting('schema_v', '1') >= 3) {
+    if ((int) setting('schema_v', '1') >= 6) {
         return;
     }
     try {
@@ -145,5 +145,50 @@ function run_migration(): void
         $pdo->exec("INSERT INTO order_events (order_id, title, created_at) SELECT id, 'Order placed', created_at FROM orders");
         $pdo->exec("INSERT INTO order_events (order_id, title, created_at) SELECT id, CONCAT('Status: ', UPPER(SUBSTRING(status, 1, 1)), SUBSTRING(status, 2)), COALESCE(updated_at, created_at) FROM orders WHERE status <> 'pending'");
     }
-    set_setting('schema_v', '3');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS categories (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        slug VARCHAR(110) NOT NULL UNIQUE,
+        sort_order INT NOT NULL DEFAULT 0,
+        is_active TINYINT(1) NOT NULL DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+    if (!$pdo->query("SHOW COLUMNS FROM products LIKE 'category_id'")->fetch()) {
+        $pdo->exec('ALTER TABLE products ADD COLUMN category_id INT UNSIGNED NULL AFTER id, ADD KEY idx_p_category (category_id)');
+    }
+    if (!$pdo->query("SHOW COLUMNS FROM categories LIKE 'image'")->fetch()) {
+        $pdo->exec("ALTER TABLE categories ADD COLUMN image VARCHAR(200) NOT NULL DEFAULT '' AFTER slug, ADD COLUMN show_on_home TINYINT(1) NOT NULL DEFAULT 1 AFTER image");
+    }
+    // Home page content managed from the admin: hero banners, blog, Instagram tiles.
+    $pdo->exec('CREATE TABLE IF NOT EXISTS banners (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        image VARCHAR(200) NOT NULL DEFAULT \'\',
+        kicker VARCHAR(80) NOT NULL DEFAULT \'\',
+        title VARCHAR(150) NOT NULL,
+        body VARCHAR(300) NOT NULL DEFAULT \'\',
+        button_label VARCHAR(40) NOT NULL DEFAULT \'\',
+        link VARCHAR(255) NOT NULL DEFAULT \'\',
+        sort_order INT NOT NULL DEFAULT 0,
+        is_active TINYINT(1) NOT NULL DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS blog_posts (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        slug VARCHAR(210) NOT NULL UNIQUE,
+        image VARCHAR(200) NOT NULL DEFAULT \'\',
+        excerpt VARCHAR(300) NOT NULL DEFAULT \'\',
+        content MEDIUMTEXT NULL,
+        is_published TINYINT(1) NOT NULL DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS insta_posts (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        image VARCHAR(200) NOT NULL DEFAULT \'\',
+        link VARCHAR(255) NOT NULL DEFAULT \'\',
+        sort_order INT NOT NULL DEFAULT 0,
+        is_active TINYINT(1) NOT NULL DEFAULT 1
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+    if (!$pdo->query("SHOW COLUMNS FROM banners LIKE 'mobile_image'")->fetch()) {
+        $pdo->exec("ALTER TABLE banners ADD COLUMN mobile_image VARCHAR(200) NOT NULL DEFAULT '' AFTER image, ADD COLUMN show_text TINYINT(1) NOT NULL DEFAULT 0 AFTER mobile_image");
+    }
+    set_setting('schema_v', '6');
 }

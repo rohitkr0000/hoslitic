@@ -26,7 +26,6 @@
 .fx-ring { width: 36px; height: 36px; margin: -18px 0 0 -18px; border-radius: 50%; border: 1.5px solid rgba(185, 220, 85, .85); transition: width .25s, height .25s, margin .25s, background .25s, opacity .3s; }
 .fx-ring.hover { width: 60px; height: 60px; margin: -30px 0 0 -30px; background: rgba(185, 220, 85, .16); }
 .fx-ring.down { width: 24px; height: 24px; margin: -12px 0 0 -12px; }
-html.fx-cursor, html.fx-cursor a, html.fx-cursor button, html.fx-cursor summary { cursor: none; }
 html.fx-cursor input, html.fx-cursor textarea, html.fx-cursor select { cursor: text; }
 
 /* Richer reveal: blocks rise with slight 3D rotation */

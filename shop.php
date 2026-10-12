@@ -2,9 +2,20 @@
 require __DIR__ . '/includes/init.php';
 
 $search = trim((string) ($_GET['q'] ?? ''));
-$products = $search !== ''
-    ? products_with_image('p.is_active = 1 AND (p.name LIKE ? OR p.short_description LIKE ?)', ["%$search%", "%$search%"])
-    : products_with_image();
+$categories = rows('SELECT id, name, slug FROM categories WHERE is_active = 1 ORDER BY sort_order, name');
+$cat = (string) ($_GET['cat'] ?? '');
+$catId = array_column($categories, 'id', 'slug')[$cat] ?? null;
+$where = 'p.is_active = 1';
+$params = [];
+if ($search !== '') {
+    $where .= ' AND (p.name LIKE ? OR p.short_description LIKE ?)';
+    array_push($params, "%$search%", "%$search%");
+}
+if ($catId) {
+    $where .= ' AND p.category_id = ?';
+    $params[] = $catId;
+}
+$products = products_with_image($where, $params);
 $sort = (string) ($_GET['sort'] ?? '');
 if ($sort === 'low') { usort($products, fn($a, $b) => $a['price'] <=> $b['price']); }
 if ($sort === 'high') { usort($products, fn($a, $b) => $b['price'] <=> $a['price']); }
@@ -24,6 +35,12 @@ require __DIR__ . '/includes/header.php';
   <div class="container">
     <form method="get" class="shop-bar">
       <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search products">
+      <?php if ($categories): ?>
+        <select name="cat" aria-label="Category" onchange="this.form.submit()">
+          <option value="">All categories</option>
+          <?php foreach ($categories as $c): ?><option value="<?= e($c['slug']) ?>"<?= $cat === $c['slug'] ? ' selected' : '' ?>><?= e($c['name']) ?></option><?php endforeach; ?>
+        </select>
+      <?php endif; ?>
       <select name="sort" aria-label="Sort by" onchange="this.form.submit()">
         <option value="">Featured</option>
         <option value="low"<?= $sort === 'low' ? ' selected' : '' ?>>Price: low to high</option>

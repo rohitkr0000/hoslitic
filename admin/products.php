@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'save') {
         $d = [
+            'category_id' => val('SELECT id FROM categories WHERE id = ?', [(int) post('category_id')]),
             'name' => mb_substr(post('name'), 0, 150),
             'tagline' => mb_substr(post('tagline'), 0, 200),
             'pack_label' => mb_substr(post('pack_label'), 0, 60),
@@ -102,7 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 admin_header('Products', 'products');
 
 if ($editing):
-    $p = $p ?? ['name' => '', 'slug' => '', 'tagline' => '', 'pack_label' => '', 'sku' => '', 'hsn' => '30049011', 'gst_rate' => 5, 'mrp' => '', 'price' => '',
+    $categories = rows('SELECT id, name FROM categories ORDER BY sort_order, name');
+    $p = $p ?? ['category_id' => null, 'name' => '', 'slug' => '', 'tagline' => '', 'pack_label' => '', 'sku' => '', 'hsn' => '30049011', 'gst_rate' => 5, 'mrp' => '', 'price' => '',
         'stock' => 0, 'weight_grams' => 100, 'short_description' => '', 'description' => '', 'ingredients' => '', 'how_to_use' => '', 'is_featured' => 0, 'is_active' => 1, 'sort_order' => 0];
     $images = $id ? rows('SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order, id', [$id]) : [];
     ?>
@@ -115,6 +117,14 @@ if ($editing):
         <div><label>URL slug</label><input type="text" name="slug" value="<?= e($p['slug']) ?>" placeholder="auto from name"></div>
         <div><label>Tagline</label><input type="text" name="tagline" value="<?= e($p['tagline']) ?>"></div>
         <div><label>Pack label</label><input type="text" name="pack_label" value="<?= e($p['pack_label']) ?>" placeholder="e.g. 60 Capsules"></div>
+        <div>
+          <label>Category</label>
+          <select name="category_id">
+            <option value="">— No category —</option>
+            <?php foreach ($categories as $c): ?><option value="<?= (int) $c['id'] ?>" <?= (int) $p['category_id'] === (int) $c['id'] ? 'selected' : '' ?>><?= e($c['name']) ?></option><?php endforeach; ?>
+          </select>
+          <div class="hint"><a href="<?= e(url('admin/crud.php?t=categories')) ?>">Manage categories</a></div>
+        </div>
       </div>
       <div class="grid three" style="margin-top:14px">
         <div><label>MRP (₹)</label><input type="number" step="0.01" min="0" name="mrp" value="<?= e($p['mrp']) ?>"></div>
@@ -156,16 +166,18 @@ if ($editing):
       </div>
     <?php endif; ?>
 <?php else:
-    $products = products_with_image('1 = 1'); ?>
+    $products = products_with_image('1 = 1');
+    $catNames = array_column(rows('SELECT id, name FROM categories'), 'name', 'id'); ?>
     <div class="top"><h1>Products</h1><a class="btn" href="<?= e(url('admin/products.php?new=1')) ?>">+ Add product</a></div>
     <div class="card table-wrap">
       <table>
-        <thead><tr><th></th><th>Product</th><th>SKU</th><th>Price</th><th>MRP</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Product</th><th>Category</th><th>SKU</th><th>Price</th><th>MRP</th><th>Stock</th><th>Status</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($products as $pr): ?>
             <tr>
               <td><img class="thumb" src="<?= e(product_image_url($pr['image'])) ?>" alt=""></td>
               <td><strong><?= e($pr['name']) ?></strong><br><span class="muted"><?= e($pr['pack_label']) ?></span></td>
+              <td><?= e($catNames[$pr['category_id']] ?? '—') ?></td>
               <td><?= e($pr['sku']) ?></td><td><?= money($pr['price']) ?></td><td><?= money($pr['mrp']) ?></td>
               <td><?= (int) $pr['stock'] ?></td>
               <td><?= $pr['is_active'] ? '<span class="badge badge-approved">Active</span>' : '<span class="badge">Hidden</span>' ?></td>

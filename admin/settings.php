@@ -18,7 +18,14 @@ $groups = [
     'Home page' => [
         'hero_kicker' => ['Small heading', 'text'],
         'hero_title' => ['Main heading', 'text'],
-        'hero_text' => ['Intro text', 'textarea'],
+        'hero_text' => ['Intro text', 'textarea', 'The home page banner is image-only, so of these three only the main heading is used, as the description of the first built-in banner image.'],
+        'instagram_handle' => ['Instagram handle', 'text', 'Without the @. Heading of the Instagram section on the home page.'],
+    ],
+    'Social links' => [
+        'facebook_url' => ['Facebook page', 'text', 'Full https:// address. Leave empty to hide.'],
+        'instagram_url' => ['Instagram profile', 'text'],
+        'youtube_url' => ['YouTube channel', 'text'],
+        'pinterest_url' => ['Pinterest profile', 'text'],
     ],
     'Tax & invoice' => [
         'legal_name' => ['Legal / proprietor name', 'text'],

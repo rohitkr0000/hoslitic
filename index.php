@@ -20,36 +20,72 @@ require __DIR__ . '/includes/header.php';
 ?>
 <?php
 $buy = $featured ? url('product.php?slug=' . urlencode($featured['slug'])) : url('shop.php');
-$slides = [
-  ['img' => $gallery[0] ?? null, 'k' => setting('hero_kicker'), 't' => setting('hero_title'), 'p' => setting('hero_text'), 'cta' => 'Shop now', 'href' => $buy],
-  ['img' => $allImgs[1] ?? ($gallery[0] ?? null), 'k' => 'Rooted in Ayurveda', 't' => 'Herbs your grandmother would trust.', 'p' => 'A traditional herbal approach in an easy vegetarian capsule.', 'cta' => 'See ingredients', 'href' => $buy],
-  ['img' => $allImgs[3] ?? ($gallery[0] ?? null), 'k' => 'Simple routine', 't' => 'One capsule. Twice a day.', 'p' => 'Take after breakfast and dinner with normal water.', 'cta' => 'View all products', 'href' => url('shop.php')],
+// Built-in hero carousel, used until banners are added in the admin. Wide photos fill the banner;
+// square ones are shown whole over a blurred copy of themselves instead of being cropped. Image only, no text.
+$wide = $square = [];
+foreach ($allImgs as $__f) {
+    $__s = @getimagesize(ROOT_PATH . '/uploads/products/' . $__f);
+    if ($__s && $__s[0] >= $__s[1] * 1.3) { $wide[] = $__f; } elseif ($__s && $__s[0] >= $__s[1] * 0.9) { $square[] = $__f; }
+}
+$heroImgs = array_slice(array_merge($wide, $square), 0, 3);
+$copy = [
+  ['k' => setting('hero_kicker'), 't' => setting('hero_title'), 'p' => setting('hero_text'), 'cta' => 'Shop now', 'href' => $buy],
+  ['k' => 'Rooted in Ayurveda', 't' => 'Herbs your grandmother would trust.', 'p' => 'A traditional herbal approach in an easy vegetarian capsule.', 'cta' => 'See ingredients', 'href' => $buy],
+  ['k' => 'Simple routine', 't' => 'One capsule. Twice a day.', 'p' => 'Take after breakfast and dinner with normal water.', 'cta' => 'View all products', 'href' => url('shop.php')],
 ];
+$slides = [];
+foreach ($heroImgs as $i => $__f) {
+    $slides[] = $copy[$i] + ['src' => product_image_url($__f), 'mobile' => null, 'text' => false, 'fit' => in_array($__f, $wide, true) ? 'builtin' : 'builtin contain'];
+}
+$slides = $slides ?: [$copy[0] + ['src' => url('assets/img/placeholder.svg'), 'mobile' => null, 'text' => false, 'fit' => 'builtin contain']];
 $concerns = [
-  ['Joint Comfort', $allImgs[0] ?? null, $buy],
-  ['Mobility &amp; Flexibility', $allImgs[2] ?? null, $buy],
-  ['Daily Wellness', $allImgs[4] ?? null, url('shop.php')],
-  ['Shop Combos', $allImgs[5] ?? null, url('shop.php')],
+  ['Joint Comfort', product_image_url($allImgs[0] ?? null), $buy],
+  ['Mobility & Flexibility', product_image_url($allImgs[2] ?? null), $buy],
+  ['Daily Wellness', product_image_url($allImgs[4] ?? null), url('shop.php')],
+  ['Shop Combos', product_image_url($allImgs[5] ?? null), url('shop.php')],
 ];
+// Admin-managed content replaces the built-in defaults above as soon as some is added.
+$banners = rows('SELECT * FROM banners WHERE is_active = 1 ORDER BY sort_order, id');
+if ($banners) {
+    $slides = [];
+    foreach ($banners as $b) {
+        $slides[] = ['src' => media_url($b['image']), 'mobile' => $b['mobile_image'] !== '' ? media_url($b['mobile_image']) : null, 'text' => (bool) $b['show_text'],
+            'k' => $b['kicker'], 't' => $b['title'], 'p' => $b['body'], 'cta' => $b['button_label'], 'href' => $b['link'] !== '' ? site_link($b['link']) : url('shop.php')];
+    }
+}
+$homeCats = rows('SELECT name, slug, image FROM categories WHERE is_active = 1 AND show_on_home = 1 ORDER BY sort_order, name');
+if ($homeCats) {
+    $concerns = [];
+    foreach ($homeCats as $c) {
+        $concerns[] = [$c['name'], media_url($c['image']), url('shop.php?cat=' . urlencode($c['slug']))];
+    }
+}
+$insta = rows('SELECT * FROM insta_posts WHERE is_active = 1 ORDER BY sort_order, id LIMIT 8');
+$posts = rows('SELECT title, slug, image, excerpt, created_at FROM blog_posts WHERE is_published = 1 ORDER BY created_at DESC, id DESC LIMIT 6');
 ?>
-<section class="hslider" id="hero" aria-roledescription="carousel">
+<?php if (empty($slides[0]['text'])): ?><h1 class="sr-only"><?= e(setting('site_name') . ' – ' . setting('tagline')) ?></h1><?php endif; ?>
+<section class="hslider full<?= count($slides) < 2 ? ' single' : '' ?>" id="hero" aria-roledescription="carousel">
   <div class="hs-track">
     <?php foreach ($slides as $i => $sl): ?>
-      <div class="hs-slide<?= $i === 0 ? ' on' : '' ?>">
-        <div class="container hs-grid">
-          <div class="hs-copy">
-            <span class="pill"><?= e($sl['k']) ?></span>
-            <?= $i === 0 ? '<h1>' : '<h2 class="hs-title">' ?><?= e($sl['t']) ?><?= $i === 0 ? '</h1>' : '</h2>' ?>
-            <p><?= e($sl['p']) ?></p>
-            <div class="hs-cta">
-              <a class="btn btn-primary" href="<?= e($sl['href']) ?>"><?= e($sl['cta']) ?></a>
-              <?php if ($i === 0 && $featured): ?><span class="hs-price">from <b><?= money($featured['price']) ?></b></span><?php endif; ?>
+      <div class="hs-slide<?= $i === 0 ? ' on' : '' ?><?= $sl['text'] ? ' has-text' : '' ?><?= !empty($sl['fit']) ? ' ' . $sl['fit'] : '' ?>">
+        <a class="hs-banner" href="<?= e($sl['href']) ?>"<?= strpos($sl['fit'] ?? '', 'contain') !== false ? ' style="--bg:url(' . e($sl['src']) . ')"' : '' ?>>
+          <picture>
+            <?php if (!empty($sl['mobile'])): ?><source media="(max-width: 640px)" srcset="<?= e($sl['mobile']) ?>"><?php endif; ?>
+            <img src="<?= e($sl['src']) ?>" alt="<?= e($sl['t']) ?>" <?= $i ? 'loading="lazy"' : '' ?>>
+          </picture>
+        </a>
+        <?php if ($sl['text']): ?>
+          <div class="hs-over">
+            <div class="container">
+              <div class="hs-copy">
+                <?php if ($sl['k'] !== ''): ?><span class="pill"><?= e($sl['k']) ?></span><?php endif; ?>
+                <?= $i === 0 ? '<h1>' : '<h2 class="hs-title">' ?><?= e($sl['t']) ?><?= $i === 0 ? '</h1>' : '</h2>' ?>
+                <?php if ($sl['p'] !== ''): ?><p><?= e($sl['p']) ?></p><?php endif; ?>
+                <?php if ($sl['cta'] !== ''): ?><div class="hs-cta"><a class="btn btn-primary" href="<?= e($sl['href']) ?>"><?= e($sl['cta']) ?></a></div><?php endif; ?>
+              </div>
             </div>
           </div>
-          <?php if ($sl['img']): ?>
-            <a class="hs-pic" href="<?= e($sl['href']) ?>"><img src="<?= e(product_image_url($sl['img'])) ?>" alt="" <?= $i ? 'loading="lazy"' : '' ?>></a>
-          <?php endif; ?>
-        </div>
+        <?php endif; ?>
       </div>
     <?php endforeach; ?>
   </div>
@@ -78,8 +114,8 @@ $concerns = [
     <div class="concerns">
       <?php foreach ($concerns as $c): ?>
         <a class="concern" href="<?= e($c[2]) ?>">
-          <?php if ($c[1]): ?><img src="<?= e(product_image_url($c[1])) ?>" alt="" loading="lazy"><?php endif; ?>
-          <span class="c-label"><b><?= $c[0] ?></b><i>Shop now →</i></span>
+          <img src="<?= e($c[1]) ?>" alt="" loading="lazy">
+          <span class="c-label"><b><?= e($c[0]) ?></b><i>Shop now →</i></span>
         </a>
       <?php endforeach; ?>
     </div>
@@ -167,6 +203,34 @@ $concerns = [
     <div class="photo-grid">
       <?php foreach (array_slice($allImgs, 0, 6) as $gi): ?><a href="<?= e($buy) ?>"><img src="<?= e(product_image_url($gi)) ?>" alt="Jointex" loading="lazy"></a><?php endforeach; ?>
     </div>
+  </div>
+</section>
+<?php endif; ?>
+
+<?php if ($insta): ?>
+<section class="screen" id="instagram">
+  <div class="container">
+    <div class="screen-head">
+      <span class="kicker">Follow us</span>
+      <h2><?= setting('instagram_handle') !== '' ? '@' . e(ltrim(setting('instagram_handle'), '@')) : 'On Instagram' ?></h2>
+    </div>
+    <div class="insta-grid">
+      <?php foreach ($insta as $ig): ?>
+        <a href="<?= e($ig['link'] !== '' ? site_link($ig['link']) : '#') ?>" target="_blank" rel="noopener"><img src="<?= e(media_url($ig['image'])) ?>" alt="Instagram post" loading="lazy"></a>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
+
+<?php if ($posts): ?>
+<section class="screen tint" id="blogs">
+  <div class="container">
+    <div class="screen-head"><span class="kicker">Blogs</span><h2>Read and learn</h2></div>
+    <div class="blog-grid">
+      <?php foreach ($posts as $bp) { blog_card($bp); } ?>
+    </div>
+    <p class="center" style="margin:22px 0 0"><a class="btn btn-ghost btn-sm" href="<?= e(url('blog.php')) ?>">See all</a></p>
   </div>
 </section>
 <?php endif; ?>
