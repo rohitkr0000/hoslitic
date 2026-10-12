@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/includes/init.php';
 require __DIR__ . '/includes/razorpay.php';
-require __DIR__ . '/includes/delhivery.php';
+require __DIR__ . '/includes/fship.php';
 
 $items = cart_items();
 if (!$items) {
@@ -39,9 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $t = compute_totals($f['state'], $f['payment_method']);
     if (!$errors && !$t['zone']) { $errors[] = 'Sorry, we do not deliver to this state yet.'; }
 
-    // Delhivery serviceability for the PIN code (skipped if Delhivery cannot be reached).
-    if (!$errors && delhivery_enabled()) {
-        $svc = delhivery_pincode($f['pincode']);
+    // Courier serviceability for the PIN code (skipped if Fship cannot be reached).
+    if (!$errors && fship_enabled()) {
+        $svc = fship_pincode($f['pincode']);
         if ($svc && !$svc['serviceable']) {
             $errors[] = 'Sorry, our courier partner does not deliver to PIN code ' . $f['pincode'] . ' yet.';
         } elseif ($svc && $f['payment_method'] === 'cod' && !$svc['cod']) {

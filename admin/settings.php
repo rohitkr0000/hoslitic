@@ -40,11 +40,12 @@ $groups = [
         'razorpay_key_secret' => ['Razorpay Key Secret', 'secret'],
         'razorpay_webhook_secret' => ['Razorpay Webhook Secret', 'secret', 'Webhook URL: ' . full_url('razorpay-webhook.php') . ' (events: payment.captured, order.paid)'],
     ],
-    'Delhivery shipping' => [
-        'delhivery_token' => ['API token', 'secret', 'From Delhivery One › Settings › API Setup. Test and live accounts have different tokens.'],
-        'delhivery_pickup' => ['Pickup location (warehouse) name', 'text', 'Exactly as registered in Delhivery, including capitals and spaces.'],
-        'delhivery_mode' => ['Shipping mode', 'text', 'Surface or Express.'],
-        'delhivery_live' => ['Live mode (untick to use the Delhivery test/staging server)', 'bool'],
+    'Fship shipping' => [
+        'fship_key' => ['API key', 'secret', 'The API key (signature) from your Fship panel. Test and live accounts have different keys.'],
+        'fship_warehouse_id' => ['Pickup warehouse ID', 'text', 'The numeric ID of your pickup address in the Fship panel (Settings › Warehouse).'],
+        'fship_pickup_pincode' => ['Pickup PIN code', 'text', 'PIN code of that warehouse. Used at checkout to check that the delivery PIN code is serviceable.'],
+        'fship_mode' => ['Shipping mode', 'text', 'Surface or Air.'],
+        'fship_live' => ['Live mode (untick to use the Fship test server)', 'bool'],
     ],
 ];
 
@@ -76,7 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        set_setting('delhivery_mode', strcasecmp(setting('delhivery_mode'), 'Express') === 0 ? 'Express' : 'Surface');
+        set_setting('fship_mode', strcasecmp(setting('fship_mode'), 'Air') === 0 ? 'Air' : 'Surface');
+        set_setting('fship_warehouse_id', preg_replace('/\D+/', '', setting('fship_warehouse_id')));
+        set_setting('fship_pickup_pincode', preg_replace('/\D+/', '', setting('fship_pickup_pincode')));
         flash('success', 'Settings saved.');
     }
     redirect('admin/settings.php');

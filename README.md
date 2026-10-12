@@ -24,7 +24,7 @@ To reinstall, delete `config/config.php` and open `install.php` again.
 - **Shipping**: set the real rates, free-shipping limits and COD fees per zone.
 - **Settings › Store**: phone, WhatsApp, email.
 - **Settings › Payments**: Razorpay Key ID and Secret. Test first with `rzp_test_…` keys. Add the webhook URL shown there in the Razorpay dashboard.
-- **Settings › Delhivery shipping**: API token and pickup location (warehouse) name. Leave "Live mode" unticked while testing with a staging token. Shipments, labels and cancellations are then done from each order screen, tracking shows on the Track Order page, and checkout checks that the PIN code is serviceable.
+- **Settings › Fship shipping**: API key, pickup warehouse ID and pickup PIN code. Untick "Live mode" while testing with a test-server key. Shipments, labels and cancellations are then done from each order screen, tracking shows on the Track Order page, and checkout checks that the PIN code is serviceable.
 - **Pages**: review the policy pages.
 - Serve the site over HTTPS.
 
@@ -34,7 +34,7 @@ To reinstall, delete `config/config.php` and open `install.php` again.
 | --- | --- |
 | `*.php` (root) | Storefront pages |
 | `admin/` | Admin panel |
-| `includes/` | Shared code: database, cart, Razorpay, Delhivery, header/footer |
+| `includes/` | Shared code: database, cart, Razorpay, Fship, header/footer |
 | `database/` | `schema.sql` and starter data |
 | `config/` | `config.php` (created by the installer) |
 | `uploads/products/` | Product images |

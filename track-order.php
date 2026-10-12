@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/includes/init.php';
 require __DIR__ . '/includes/order-view.php';
-require __DIR__ . '/includes/delhivery.php';
+require __DIR__ . '/includes/fship.php';
 
 $orderNo = trim((string) ($_GET['order'] ?? ''));
 $phone = substr(preg_replace('/\D+/', '', (string) ($_GET['phone'] ?? '')), -10);
@@ -11,8 +11,8 @@ $searched = $orderNo !== '' || $phone !== '';
 if ($searched && !throttle_hit('track', 20, 600)) {
     // Both the order number and the phone must match, so order numbers cannot be guessed.
     $o = row('SELECT * FROM orders WHERE order_no = ? AND phone = ?', [$orderNo, $phone]);
-    if ($o && $o['awb'] !== '' && $o['courier'] === 'Delhivery' && delhivery_enabled()) {
-        $scans = delhivery_track($o['awb'])['scans'] ?? [];
+    if ($o && $o['awb'] !== '' && $o['courier'] === 'Fship' && fship_enabled()) {
+        $scans = fship_track($o['awb'])['scans'] ?? [];
     }
 }
 $pageTitle = 'Track order';
