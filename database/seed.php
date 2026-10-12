@@ -3,9 +3,10 @@
 
 function seed_database(PDO $pdo): void
 {
-    $ins = function (string $table, array $data) use ($pdo): int {
+    // $ignore skips rows whose unique key (coupon code, page slug) already exists.
+    $ins = function (string $table, array $data, bool $ignore = false) use ($pdo): int {
         $cols = array_keys($data);
-        $st = $pdo->prepare("INSERT INTO $table (" . implode(',', $cols) . ') VALUES (' . implode(',', array_fill(0, count($cols), '?')) . ')');
+        $st = $pdo->prepare('INSERT ' . ($ignore ? 'IGNORE ' : '') . "INTO $table (" . implode(',', $cols) . ') VALUES (' . implode(',', array_fill(0, count($cols), '?')) . ')');
         $st->execute(array_values($data));
         return (int) $pdo->lastInsertId();
     };
@@ -83,7 +84,7 @@ function seed_database(PDO $pdo): void
     $ins('shipping_zones', ['name' => 'Rest of India', 'states' => '*', 'rate' => 70, 'free_above' => 999, 'cod_fee' => 40, 'eta' => '4–7 business days', 'sort_order' => 3]);
 
     // ---- Coupon ----
-    $ins('coupons', ['code' => 'WELCOME10', 'type' => 'percent', 'value' => 10, 'min_order' => 499, 'max_discount' => 150]);
+    $ins('coupons', ['code' => 'WELCOME10', 'type' => 'percent', 'value' => 10, 'min_order' => 499, 'max_discount' => 150], true);
 
     // ---- FAQs ----
     $faqs = [
@@ -107,6 +108,6 @@ function seed_database(PDO $pdo): void
         ['terms', 'Terms & Conditions', '<p>By placing an order on this website you agree to these terms. Prices are in Indian Rupees and include GST. We may update prices and offers without notice, but the price confirmed in your order will be honoured.</p><p>The information on this website is for general purposes and is not medical advice. This product is not intended to diagnose, treat, cure or prevent any disease. Please consult a qualified physician about any health condition.</p><p>Any dispute is subject to the jurisdiction of the courts of Gautambuddha Nagar, Uttar Pradesh.</p>'],
     ];
     foreach ($pages as $i => $p) {
-        $ins('pages', ['slug' => $p[0], 'title' => $p[1], 'content' => $p[2], 'sort_order' => $i]);
+        $ins('pages', ['slug' => $p[0], 'title' => $p[1], 'content' => $p[2], 'sort_order' => $i], true);
     }
 }

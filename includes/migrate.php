@@ -95,7 +95,7 @@ function return_statuses(): array
 
 function migrate_database(): void
 {
-    if ((int) setting('schema_v', '1') >= 6) {
+    if ((int) setting('schema_v', '1') >= 7) {
         return;
     }
     try {
@@ -190,5 +190,12 @@ function run_migration(): void
     if (!$pdo->query("SHOW COLUMNS FROM banners LIKE 'mobile_image'")->fetch()) {
         $pdo->exec("ALTER TABLE banners ADD COLUMN mobile_image VARCHAR(200) NOT NULL DEFAULT '' AFTER image, ADD COLUMN show_text TINYINT(1) NOT NULL DEFAULT 0 AFTER mobile_image");
     }
-    set_setting('schema_v', '6');
+    // A store set up without install.php's starter data has no products, so nothing has a photo.
+    // Add the starter products, FAQs, shipping zones and settings once, only if it has never traded.
+    if (!(int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn() && !(int) $pdo->query('SELECT COUNT(*) FROM orders')->fetchColumn()) {
+        require_once ROOT_PATH . '/database/seed.php';
+        seed_database($pdo);
+        settings_all(true);
+    }
+    set_setting('schema_v', '7');
 }
