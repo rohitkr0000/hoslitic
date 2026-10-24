@@ -47,7 +47,7 @@ function sec_usps(string $title = 'Why shop with us'): void
 function sec_delivery_steps(): void
 {
     $steps = [
-        ['cart', 'Place your order', 'Choose your pack and check out in a minute, as a guest or with an account.'],
+        ['cart', 'Place your order', 'Choose your pack, create your free account and check out in a minute.'],
         ['box', 'We pack & dispatch', 'Orders ship within 1–2 business days from our Noida office.'],
         ['pin', 'Track every step', 'Follow your parcel any time from the Track Order page.'],
         ['check', 'Delivered to you', 'Pay online beforehand, or in cash at the door.'],

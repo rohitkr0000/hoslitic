@@ -95,7 +95,7 @@ function return_statuses(): array
 
 function migrate_database(): void
 {
-    if ((int) setting('schema_v', '1') >= 7) {
+    if ((int) setting('schema_v', '1') >= 8) {
         return;
     }
     try {
@@ -197,5 +197,25 @@ function run_migration(): void
         seed_database($pdo);
         settings_all(true);
     }
-    set_setting('schema_v', '7');
+    // Email verification by one-time code (register + checkout).
+    if (!$pdo->query("SHOW COLUMNS FROM users LIKE 'email_verified_at'")->fetch()) {
+        $pdo->exec('ALTER TABLE users ADD COLUMN email_verified_at DATETIME NULL AFTER email');
+    }
+    $pdo->exec('CREATE TABLE IF NOT EXISTS email_otps (
+        email VARCHAR(150) NOT NULL PRIMARY KEY,
+        code_hash VARCHAR(255) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        sent_at DATETIME NOT NULL,
+        send_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        window_start DATETIME NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+    if (!array_key_exists('email_verify', settings_all())) {
+        set_setting('email_verify', '1');
+    }
+    if (setting('smtp_host') === '') {
+        set_setting('smtp_host', 'smtp.gmail.com');
+        set_setting('smtp_port', '587');
+    }
+    set_setting('schema_v', '8');
 }

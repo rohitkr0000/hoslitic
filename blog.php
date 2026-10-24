@@ -24,7 +24,7 @@ if ($slug !== '') {
     <section class="section" style="padding-top:40px">
       <div class="narrow content card blog-post">
         <?php if ($post['image'] !== ''): ?><img class="blog-cover" src="<?= e(media_url($post['image'])) ?>" alt=""><?php endif; ?>
-        <?= $post['content'] /* HTML authored by the store admin */ ?>
+        <?= clean_links($post['content']) /* HTML authored by the store admin */ ?>
       </div>
     </section>
     <?php if ($more): ?>

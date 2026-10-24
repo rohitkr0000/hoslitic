@@ -27,6 +27,15 @@ session_start();
 
 require ROOT_PATH . '/includes/db.php';
 require ROOT_PATH . '/includes/functions.php';
+
+// Old ".php" addresses (bookmarks, search results, shared links) move permanently to the clean ones.
+// Only GET/HEAD: form posts and the Razorpay webhook keep working at their .php address.
+$reqPath = (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+if (in_array($_SERVER['REQUEST_METHOD'] ?? '', ['GET', 'HEAD'], true) && substr($reqPath, -4) === '.php') {
+    $reqQuery = (string) parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
+    header('Location: ' . url(substr($reqPath, strlen(BASE_URL)) . ($reqQuery !== '' ? '?' . $reqQuery : '')), true, 301);
+    exit;
+}
 require ROOT_PATH . '/includes/cart.php';
 require ROOT_PATH . '/includes/migrate.php';
 migrate_database();

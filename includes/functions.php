@@ -19,9 +19,34 @@ function e($v): string
     return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 }
 
+// Links are written as "shop.php", "admin/index.php", "product.php?slug=x" and come out clean:
+// "/shop", "/admin/", "/product/x". The root .htaccess (and router.php locally) maps them back.
 function url(string $path = ''): string
 {
-    return BASE_URL . '/' . ltrim($path, '/');
+    $path = ltrim($path, '/');
+    if (preg_match('/^([^?#]*)\.php(?:\?([^#]*))?(#.*)?$/', $path, $m)) {
+        $file = preg_replace('#(^|/)index$#', '$1', $m[1]);
+        $query = $m[2] ?? '';
+        if (in_array($file, ['product', 'blog', 'page'], true)) {
+            parse_str($query, $q);
+            if (($q['slug'] ?? '') !== '') {
+                $file .= '/' . rawurlencode((string) $q['slug']);
+                unset($q['slug']);
+                $query = http_build_query($q);
+            }
+        }
+        $path = $file . ($query !== '' ? '?' . $query : '') . ($m[3] ?? '');
+    }
+    return BASE_URL . '/' . $path;
+}
+
+// Relative "something.php" links inside admin-written HTML (pages, blog posts), made clean and
+// absolute so they also work from nested URLs such as /page/terms.
+function clean_links(string $html): string
+{
+    return preg_replace_callback('/href="([a-z0-9_-]+\.php(?:[?#][^"]*)?)"/i', function ($m) {
+        return 'href="' . e(url(html_entity_decode($m[1], ENT_QUOTES, 'UTF-8'))) . '"';
+    }, $html);
 }
 
 function full_url(string $path = ''): string
@@ -367,19 +392,162 @@ function order_tax_lines(array $order, array $items): array
 }
 
 // ---------- Mail ----------
+// Sends through SMTP (e.g. Gmail) when Settings › Email (SMTP) is filled in, otherwise PHP mail().
 function send_mail(string $to, string $subject, string $html): bool
 {
-    if ($to === '' || !function_exists('mail')) {
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
         return false;
     }
-    $from = setting('email');
+    $smtp = smtp_enabled();
+    $replyTo = setting('email');
+    $from = $smtp ? setting('smtp_user') : $replyTo;
     if ($from === '') {
         $host = preg_replace('/^www\./', '', preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST'] ?? 'localhost'));
         $from = 'noreply@' . $host;
     }
+    if (!filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+        $replyTo = $from;
+    }
     $name = str_replace(['"', "\r", "\n"], '', setting('site_name', 'Store'));
-    $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: \"$name\" <$from>\r\nReply-To: $from\r\n";
-    return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $html, $headers);
+    $subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $headers = "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nFrom: \"$name\" <$from>\r\nReply-To: $replyTo\r\n";
+    if ($smtp) {
+        return smtp_send($from, $to, "To: <$to>\r\nSubject: $subject\r\nDate: " . date('r') . "\r\n" . $headers
+            . "Content-Transfer-Encoding: base64\r\n\r\n" . chunk_split(base64_encode($html)));
+    }
+    return function_exists('mail') && @mail($to, $subject, $html, $headers);
+}
+
+function smtp_enabled(): bool
+{
+    return setting('smtp_host') !== '' && setting('smtp_user') !== '' && setting('smtp_pass') !== '';
+}
+
+// Delivers a ready-made message with cURL: port 465 = SSL, any other port = STARTTLS.
+function smtp_send(string $from, string $to, string $message): bool
+{
+    if (!function_exists('curl_init')) {
+        error_log('SMTP: PHP cURL extension is not enabled.');
+        return false;
+    }
+    $port = (int) setting('smtp_port', '587') ?: 587;
+    $stream = fopen('php://temp', 'r+');
+    fwrite($stream, $message);
+    rewind($stream);
+    $ch = curl_init(($port === 465 ? 'smtps://' : 'smtp://') . setting('smtp_host') . ':' . $port);
+    curl_setopt_array($ch, [
+        CURLOPT_USE_SSL => CURLUSESSL_ALL,
+        CURLOPT_USERNAME => setting('smtp_user'),
+        CURLOPT_PASSWORD => str_replace(' ', '', setting('smtp_pass')), // Gmail shows app passwords with spaces
+        CURLOPT_MAIL_FROM => "<$from>",
+        CURLOPT_MAIL_RCPT => ["<$to>"],
+        CURLOPT_UPLOAD => true,
+        CURLOPT_INFILE => $stream,
+        CURLOPT_INFILESIZE => strlen($message),
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 25,
+    ]);
+    $ok = curl_exec($ch) !== false;
+    if (!$ok) {
+        error_log('SMTP: ' . curl_error($ch));
+    }
+    fclose($stream);
+    return $ok;
+}
+
+// ---------- Email verification (one-time codes) ----------
+function email_verify_required(): bool
+{
+    return setting('email_verify', '1') === '1';
+}
+
+// True if this visitor proved they own $email in this session, or it is the logged-in user's verified email.
+function email_verified(string $email): bool
+{
+    $email = strtolower(trim($email));
+    if ($email === '' || !email_verify_required()) {
+        return true;
+    }
+    $u = current_user();
+    if ($u && !empty($u['email_verified_at']) && strtolower($u['email']) === $email) {
+        return true;
+    }
+    return ($_SESSION['verified_emails'][$email] ?? 0) > time() - 7200;
+}
+
+/** Emails a 6-digit code. Returns an error message, or null when sent. */
+function otp_send(string $email): ?string
+{
+    $email = strtolower(trim($email));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return 'Please enter a valid email address.';
+    }
+    $o = row('SELECT * FROM email_otps WHERE email = ?', [$email]);
+    $now = time();
+    if ($o && strtotime($o['sent_at']) > $now - 60) {
+        return 'A code was just sent. Please wait a minute before asking for another.';
+    }
+    // At most 5 codes per email address per hour, and 10 per visitor per hour.
+    $count = ($o && strtotime($o['window_start']) > $now - 3600) ? (int) $o['send_count'] : 0;
+    if ($count >= 5 || throttle_hit('otp_send', 10, 3600)) {
+        return 'Too many codes requested. Please try again in an hour.';
+    }
+    $code = (string) random_int(100000, 999999);
+    $body = '<p>Your verification code is:</p>'
+        . '<p style="font-size:30px;font-weight:bold;letter-spacing:8px;color:#14432a;margin:16px 0">' . $code . '</p>'
+        . '<p>It is valid for 10 minutes. If you did not request it, you can ignore this email.</p>';
+    if (!send_mail($email, $code . ' is your ' . setting('site_name', 'Store') . ' verification code', mail_layout('Verify your email', $body))) {
+        return 'We could not send the email right now. Please check the address or try again shortly.';
+    }
+    q('INSERT INTO email_otps (email, code_hash, expires_at, attempts, sent_at, send_count, window_start) VALUES (?, ?, ?, 0, NOW(), 1, NOW())
+       ON DUPLICATE KEY UPDATE code_hash = VALUES(code_hash), expires_at = VALUES(expires_at), attempts = 0, sent_at = NOW(),
+       send_count = ?, window_start = ?', [
+        $email, password_hash($code, PASSWORD_DEFAULT), date('Y-m-d H:i:s', $now + 600),
+        $count + 1, $count ? $o['window_start'] : date('Y-m-d H:i:s', $now),
+    ]);
+    return null;
+}
+
+/** Checks a code. Returns an error message, or null when the email is now verified. */
+function otp_verify(string $email, string $code): ?string
+{
+    $email = strtolower(trim($email));
+    $o = row('SELECT * FROM email_otps WHERE email = ?', [$email]);
+    if (!$o || strtotime($o['expires_at']) < time()) {
+        return 'This code has expired. Please request a new one.';
+    }
+    if ((int) $o['attempts'] >= 5) {
+        return 'Too many wrong attempts. Please request a new code.';
+    }
+    if (!preg_match('/^\d{6}$/', $code) || !password_verify($code, $o['code_hash'])) {
+        q('UPDATE email_otps SET attempts = attempts + 1 WHERE email = ?', [$email]);
+        return 'That code is not correct. Please check the email and try again.';
+    }
+    q('UPDATE email_otps SET expires_at = NOW() WHERE email = ?', [$email]); // one use only
+    $_SESSION['verified_emails'][$email] = time();
+    return null;
+}
+
+// Email field with "Send code" + code box. Used on the register and checkout forms (see app.js).
+function email_verify_field(string $email, string $context): string
+{
+    $done = email_verified($email);
+    ob_start(); ?>
+    <div class="ev" data-ev data-context="<?= e($context) ?>" data-endpoint="<?= e(url('verify-email.php')) ?>" data-verified="<?= $done && $email !== '' ? e(strtolower($email)) : '' ?>">
+      <label for="email">Email <span class="req">*</span></label>
+      <div class="ev-row">
+        <input id="email" type="email" name="email" value="<?= e($email) ?>" autocomplete="email" required>
+        <?php if (email_verify_required()): ?><button class="btn btn-ghost btn-sm" type="button" data-ev-send>Send code</button><?php endif; ?>
+      </div>
+      <?php if (email_verify_required()): ?>
+        <div class="ev-row ev-code" hidden>
+          <input type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" autocomplete="one-time-code" data-ev-code>
+          <button class="btn btn-dark btn-sm" type="button" data-ev-check>Verify</button>
+        </div>
+        <p class="ev-msg" data-ev-msg aria-live="polite"></p>
+      <?php endif; ?>
+    </div>
+    <?php return ob_get_clean();
 }
 
 // Branded wrapper for every customer email.

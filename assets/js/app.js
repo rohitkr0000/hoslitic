@@ -94,3 +94,98 @@ document.querySelectorAll('.gallery-thumbs button').forEach(function (t) {
   });
   auto();
 })();
+
+// Email verification: "Send code" emails a 6-digit code, "Verify" checks it (verify-email.php).
+document.querySelectorAll('[data-ev]').forEach(function (box) {
+  var send = box.querySelector('[data-ev-send]');
+  if (!send) { return; } // verification switched off in admin settings
+  var form = box.closest('form');
+  var input = box.querySelector('input[type=email]');
+  var codeRow = box.querySelector('.ev-code');
+  var code = box.querySelector('[data-ev-code]');
+  var check = box.querySelector('[data-ev-check]');
+  var msg = box.querySelector('[data-ev-msg]');
+  var timer = null;
+
+  function current() { return input.value.trim().toLowerCase(); }
+  function isVerified() { return box.dataset.verified !== '' && box.dataset.verified === current(); }
+  function say(text, ok) { msg.textContent = text; msg.className = 'ev-msg ' + (ok ? 'ok' : 'err'); }
+
+  function render() {
+    clearInterval(timer);
+    send.disabled = false;
+    if (isVerified()) {
+      send.hidden = true;
+      codeRow.hidden = true;
+      box.classList.add('done');
+      say('✓ Email verified', true);
+    } else {
+      send.hidden = false;
+      send.textContent = 'Send code';
+      box.classList.remove('done');
+      codeRow.hidden = true;
+      msg.textContent = '';
+    }
+  }
+
+  function cooldown(sec) {
+    send.disabled = true;
+    timer = setInterval(function () {
+      sec -= 1;
+      send.textContent = sec > 0 ? 'Resend in ' + sec + 's' : 'Resend code';
+      if (sec <= 0) { clearInterval(timer); send.disabled = false; }
+    }, 1000);
+  }
+
+  function call(data, done) {
+    var body = new FormData();
+    body.append('csrf', form.querySelector('input[name=csrf]').value);
+    body.append('email', current());
+    Object.keys(data).forEach(function (k) { body.append(k, data[k]); });
+    fetch(box.dataset.endpoint, { method: 'POST', body: body, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(done)
+      .catch(function () { done({ ok: false, message: 'Something went wrong. Please refresh the page and try again.' }); });
+  }
+
+  send.addEventListener('click', function () {
+    if (!input.checkValidity() || current() === '') { say('Please enter a valid email address first.', false); input.focus(); return; }
+    send.disabled = true;
+    send.textContent = 'Sending…';
+    call({ action: 'send', context: box.dataset.context }, function (res) {
+      if (res.ok && res.verified) { box.dataset.verified = current(); render(); return; }
+      say(res.message, res.ok);
+      if (res.ok) {
+        codeRow.hidden = false;
+        code.value = '';
+        code.focus();
+        cooldown(60);
+      } else {
+        send.disabled = false;
+        send.textContent = 'Send code';
+      }
+    });
+  });
+
+  function verify() {
+    if (!/^\d{6}$/.test(code.value.trim())) { say('Please enter the 6-digit code from the email.', false); code.focus(); return; }
+    check.disabled = true;
+    call({ action: 'verify', code: code.value.trim() }, function (res) {
+      check.disabled = false;
+      if (res.ok) { box.dataset.verified = current(); render(); } else { say(res.message, false); }
+    });
+  }
+  check.addEventListener('click', verify);
+  code.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); verify(); } });
+  input.addEventListener('input', render);
+
+  form.addEventListener('submit', function (ev) {
+    if (!isVerified()) {
+      ev.preventDefault();
+      say('Please verify your email address before continuing.', false);
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+
+  render();
+});

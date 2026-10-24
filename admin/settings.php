@@ -40,12 +40,18 @@ $groups = [
         'razorpay_key_secret' => ['Razorpay Key Secret', 'secret'],
         'razorpay_webhook_secret' => ['Razorpay Webhook Secret', 'secret', 'Webhook URL: ' . full_url('razorpay-webhook.php') . ' (events: payment.captured, order.paid)'],
     ],
-    'Fship shipping' => [
-        'fship_key' => ['API key', 'secret', 'The API key (signature) from your Fship panel. Test and live accounts have different keys.'],
-        'fship_warehouse_id' => ['Pickup warehouse ID', 'text', 'The numeric ID of your pickup address in the Fship panel (Settings › Warehouse).'],
-        'fship_pickup_pincode' => ['Pickup PIN code', 'text', 'PIN code of that warehouse. Used at checkout to check that the delivery PIN code is serviceable.'],
-        'fship_mode' => ['Shipping mode', 'text', 'Surface or Air.'],
-        'fship_live' => ['Live mode (untick to use the Fship test server)', 'bool'],
+    'Email (SMTP)' => [
+        'email_verify' => ['Require email verification (a 6-digit code) when customers register or place an order', 'bool'],
+        'smtp_host' => ['SMTP server', 'text', 'Gmail: smtp.gmail.com'],
+        'smtp_port' => ['SMTP port', 'text', '587 (STARTTLS) or 465 (SSL).'],
+        'smtp_user' => ['SMTP username / Gmail address', 'text', 'Emails are sent from this address.'],
+        'smtp_pass' => ['SMTP password / Gmail app password', 'secret', 'For Gmail: turn on 2-Step Verification, then create an App password at myaccount.google.com/apppasswords. Your normal Gmail password will not work.'],
+    ],
+    'Delhivery shipping' => [
+        'delhivery_token' => ['API token', 'secret', 'From Delhivery One › Settings › API Setup. Test and live accounts have different tokens.'],
+        'delhivery_pickup' => ['Pickup location (warehouse) name', 'text', 'Exactly as registered in Delhivery, including capitals and spaces.'],
+        'delhivery_mode' => ['Shipping mode', 'text', 'Surface or Express.'],
+        'delhivery_live' => ['Live mode (untick to use the Delhivery test/staging server)', 'bool'],
     ],
 ];
 
@@ -60,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             q('UPDATE admins SET password_hash = ? WHERE id = ?', [password_hash($new, PASSWORD_DEFAULT), $admin['id']]);
             flash('success', 'Admin password changed.');
         }
-    } else {
+    } elseif (post('action') !== 'test_mail') {
         foreach ($groups as $fields) {
             foreach ($fields as $key => $fd) {
                 if ($fd[1] === 'bool') {
@@ -77,10 +83,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        set_setting('fship_mode', strcasecmp(setting('fship_mode'), 'Air') === 0 ? 'Air' : 'Surface');
-        set_setting('fship_warehouse_id', preg_replace('/\D+/', '', setting('fship_warehouse_id')));
-        set_setting('fship_pickup_pincode', preg_replace('/\D+/', '', setting('fship_pickup_pincode')));
+        set_setting('delhivery_mode', strcasecmp(setting('delhivery_mode'), 'Express') === 0 ? 'Express' : 'Surface');
         flash('success', 'Settings saved.');
+    }
+    if (post('action') === 'test_mail') {
+        $ok = send_mail($admin['email'], 'Test email from ' . setting('site_name'), mail_layout('Email is working', '<p>Your store can send emails, including verification codes.</p>'));
+        flash($ok ? 'success' : 'error', $ok ? 'Test email sent to ' . $admin['email'] . '.' : 'The test email could not be sent. Check the SMTP settings (and the PHP error log for details).');
     }
     redirect('admin/settings.php');
 }
@@ -115,6 +123,14 @@ admin_header('Settings', 'settings');
     </div>
   <?php endforeach; ?>
   <p><button class="btn" type="submit">Save settings</button></p>
+</form>
+
+<form class="card" method="post">
+  <?= csrf_field() ?>
+  <input type="hidden" name="action" value="test_mail">
+  <h2>Test email</h2>
+  <p class="hint">Save the SMTP settings first, then send a test email to <?= e($admin['email']) ?>.</p>
+  <p><button class="btn" type="submit">Send test email</button></p>
 </form>
 
 <form class="card" method="post">

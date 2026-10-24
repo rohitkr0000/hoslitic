@@ -75,7 +75,7 @@ $wa = preg_replace('/\D+/', '', setting('whatsapp'));
 <?php if ($wa !== ''): ?>
   <a class="wa-float" href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">✆</a>
 <?php endif; ?>
-<script src="<?= e(url('assets/js/app.js')) ?>?v=8"></script>
+<script src="<?= e(url('assets/js/app.js')) ?>?v=9"></script>
 <script src="<?= e(url('assets/js/motion.js')) ?>?v=4"></script>
 <script src="<?= e(url('assets/js/fx.js')) ?>?v=3"></script>
 <?php if (!empty($heroScene)): ?>

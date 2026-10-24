@@ -14,7 +14,7 @@ $low = rows('SELECT name, stock FROM products WHERE is_active = 1 AND stock <= 1
 $todo = [];
 if (!payment_methods()) { $todo[] = 'No payment method is enabled — customers cannot check out.'; }
 if (setting('razorpay_key_id') === '') { $todo[] = 'Add your Razorpay keys in Settings to accept online payments.'; }
-if (setting('fship_key') === '') { $todo[] = 'Add your Fship API key in Settings to create shipments and labels from the order screen.'; }
+if (setting('delhivery_token') === '') { $todo[] = 'Add your Delhivery API token in Settings to create shipments and labels from the order screen.'; }
 if (setting('phone') === '' || setting('email') === '') { $todo[] = 'Add your support phone and email in Settings (the email is also used to send order confirmations).'; }
 if (is_file(ROOT_PATH . '/install.php')) { $todo[] = 'Delete install.php from the server.'; }
 

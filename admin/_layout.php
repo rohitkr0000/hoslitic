@@ -38,7 +38,7 @@ function admin_header(string $title, string $active): void
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title><?= e($title) ?> · Admin</title>
-<link rel="stylesheet" href="<?= e(url('assets/css/admin.css')) ?>?v=1">
+<link rel="stylesheet" href="<?= e(url('assets/css/admin.css')) ?>?v=2">
 </head>
 <body>
 <div class="shell">

@@ -3,3 +3,6 @@ config/config.php
 *.log
 .claude/
 config/*.bak
+
+# Database export (contains the admin password hash)
+database/fresh-database.sql

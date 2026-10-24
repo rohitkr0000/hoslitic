@@ -172,3 +172,16 @@ main .hero.screen { padding: 0 !important; display: flex; flex-direction: column
 @media (min-width: 961px) { main .hero.screen { min-height: calc(100svh - 108px) !important; } }
 main .screen-head { margin-bottom: 0; }
 .site-footer { margin-top: 0; }
+
+/* Email verification field (register + checkout) */
+.req { color: var(--danger, #c0392b); }
+.ev-row { display: flex; gap: 8px; align-items: stretch; }
+.ev-row input { flex: 1; min-width: 0; }
+.ev-row .btn { flex: none; white-space: nowrap; }
+.ev-code { margin-top: 8px; }
+.ev-code input { letter-spacing: .3em; font-weight: 700; }
+.ev-msg { margin: 6px 0 0; font-size: .86rem; min-height: 1.2em; }
+.ev-msg.ok { color: var(--forest-2, #1d6b3f); }
+.ev-msg.err { color: var(--danger, #c0392b); }
+.ev.done input[type=email] { border-color: var(--forest-2, #1d6b3f); }
+.ev [hidden] { display: none !important; }

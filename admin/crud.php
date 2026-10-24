@@ -8,7 +8,7 @@ $defs = [
         'list' => ['name' => 'Category', 'slug' => 'URL slug', 'sort_order' => 'Order', 'is_active' => 'Active'],
         'fields' => [
             'name' => ['Category name', 'text'],
-            'slug' => ['URL slug', 'text', 'Leave empty to create it from the name. Opens at shop.php?cat=…'],
+            'slug' => ['URL slug', 'text', 'Leave empty to create it from the name. Opens at /shop?cat=…'],
             'image' => ['Tile image', 'image', 'Shown in "Shop by concern" on the home page. Square images look best.'],
             'sort_order' => ['Sort order', 'int'],
             'show_on_home' => ['Show on home page', 'bool'],
@@ -20,7 +20,7 @@ $defs = [
         'list' => ['title' => 'Heading', 'link' => 'Link', 'sort_order' => 'Order', 'is_active' => 'Active'],
         'fields' => [
             'title' => ['Banner name', 'text', 'Describes the banner for screen readers and search engines. Also the heading when text is shown over the image.'],
-            'link' => ['Link', 'text', 'Where the banner goes when clicked: a page on this site (e.g. shop.php or shop.php?cat=combos) or a full https:// address.'],
+            'link' => ['Link', 'text', 'Where the banner goes when clicked: a page on this site (e.g. shop or shop?cat=combos) or a full https:// address.'],
             'image' => ['Banner image (desktop)', 'image', 'Full-width artwork, about 1920 × 700. Put your offer text in the image itself.'],
             'mobile_image' => ['Banner image (mobile, optional)', 'image', 'Shown on phones instead of the desktop image, about 800 × 800.'],
             'show_text' => ['Show heading, text and button over the image', 'bool', 'Leave unticked for image-only banners.'],
@@ -36,7 +36,7 @@ $defs = [
         'list' => ['title' => 'Title', 'slug' => 'URL slug', 'created_at' => 'Date', 'is_published' => 'Published'],
         'fields' => [
             'title' => ['Title', 'text'],
-            'slug' => ['URL slug', 'text', 'Leave empty to create it from the title. Opens at blog.php?slug=…'],
+            'slug' => ['URL slug', 'text', 'Leave empty to create it from the title. Opens at /blog/…'],
             'image' => ['Cover image', 'image'],
             'excerpt' => ['Short summary', 'textarea', 'One or two sentences shown on the blog cards.'],
             'content' => ['Article', 'html'],
@@ -96,7 +96,7 @@ $defs = [
         'list' => ['title' => 'Title', 'slug' => 'URL slug', 'show_in_footer' => 'In footer'],
         'fields' => [
             'title' => ['Page title', 'text'],
-            'slug' => ['URL slug', 'text', 'Opens at page.php?slug=…  Keep "about" and "terms" as they are linked from the site.'],
+            'slug' => ['URL slug', 'text', 'Opens at /page/…  Keep "about" and "terms" as they are linked from the site.'],
             'content' => ['Content (HTML allowed)', 'html'],
             'sort_order' => ['Sort order', 'int'],
             'show_in_footer' => ['Show in footer', 'bool'],

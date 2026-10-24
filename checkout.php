@@ -1,14 +1,20 @@
 <?php
 require __DIR__ . '/includes/init.php';
 require __DIR__ . '/includes/razorpay.php';
-require __DIR__ . '/includes/fship.php';
+require __DIR__ . '/includes/delhivery.php';
 
 $items = cart_items();
 if (!$items) {
     flash('info', 'Your cart is empty.');
     redirect('cart.php');
 }
+// Only registered (logged-in) customers can buy; they come back here after logging in or registering.
 $user = current_user();
+if (!$user) {
+    $_SESSION['after_login'] = url('checkout.php');
+    flash('info', 'Please log in or create an account to place your order.');
+    redirect('login.php');
+}
 $methods = payment_methods();
 $states = indian_states();
 $f = [
@@ -29,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (mb_strlen($f['name']) < 3) { $errors[] = 'Please enter your full name.'; }
     if (!filter_var($f['email'], FILTER_VALIDATE_EMAIL)) { $errors[] = 'Please enter a valid email address.'; }
+    elseif (!email_verified($f['email'])) { $errors[] = 'Please verify your email address with the code we email you.'; }
     if (!preg_match('/^[6-9]\d{9}$/', $f['phone'])) { $errors[] = 'Please enter a valid 10-digit mobile number.'; }
     if (mb_strlen($f['address']) < 8) { $errors[] = 'Please enter your complete address.'; }
     if ($f['city'] === '') { $errors[] = 'Please enter your city.'; }
@@ -39,9 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $t = compute_totals($f['state'], $f['payment_method']);
     if (!$errors && !$t['zone']) { $errors[] = 'Sorry, we do not deliver to this state yet.'; }
 
-    // Courier serviceability for the PIN code (skipped if Fship cannot be reached).
-    if (!$errors && fship_enabled()) {
-        $svc = fship_pincode($f['pincode']);
+    // Delhivery serviceability for the PIN code (skipped if Delhivery cannot be reached).
+    if (!$errors && delhivery_enabled()) {
+        $svc = delhivery_pincode($f['pincode']);
         if ($svc && !$svc['serviceable']) {
             $errors[] = 'Sorry, our courier partner does not deliver to PIN code ' . $f['pincode'] . ' yet.';
         } elseif ($svc && $f['payment_method'] === 'cod' && !$svc['cod']) {
@@ -75,6 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user) {
             q('UPDATE users SET phone = ?, address = ?, city = ?, state = ?, pincode = ? WHERE id = ?',
                 [$f['phone'], mb_substr($f['address'], 0, 255), mb_substr($f['city'], 0, 80), $f['state'], $f['pincode'], $user['id']]);
+            // Accounts created before email verification existed become verified the first time they confirm it here.
+            if (empty($user['email_verified_at']) && email_verify_required() && strtolower($f['email']) === strtolower($user['email'])) {
+                q('UPDATE users SET email_verified_at = NOW() WHERE id = ?', [$user['id']]);
+            }
         }
 
         if ($f['payment_method'] === 'cod') {
@@ -101,18 +112,15 @@ require __DIR__ . '/includes/header.php';
 <section class="section" style="padding-top:40px">
   <div class="container">
     <?php foreach ($errors as $er): ?><div class="flash flash-error"><?= e($er) ?></div><?php endforeach; ?>
-    <?php if (!$user): ?>
-      <p class="muted">Have an account? <a href="<?= e(url('login.php?next=checkout')) ?>">Log in</a> for faster checkout — or simply continue as a guest.</p>
-    <?php endif; ?>
     <form method="post" class="checkout-layout" novalidate>
       <?= csrf_field() ?>
       <div>
         <div class="card">
           <h3>Delivery details</h3>
           <div class="form-grid">
-            <div class="full"><label for="name">Full name</label><input id="name" type="text" name="name" value="<?= e($f['name']) ?>" autocomplete="name" required></div>
-            <div><label for="phone">Mobile number</label><input id="phone" type="tel" name="phone" value="<?= e($f['phone']) ?>" autocomplete="tel" inputmode="numeric" maxlength="13" required></div>
-            <div><label for="email">Email</label><input id="email" type="email" name="email" value="<?= e($f['email']) ?>" autocomplete="email" required></div>
+            <div class="full"><label for="name">Full name <span class="req">*</span></label><input id="name" type="text" name="name" value="<?= e($f['name']) ?>" autocomplete="name" required></div>
+            <div class="full"><label for="phone">Mobile number <span class="req">*</span></label><input id="phone" type="tel" name="phone" value="<?= e($f['phone']) ?>" autocomplete="tel" inputmode="numeric" maxlength="13" required></div>
+            <div class="full"><?= email_verify_field($f['email'], 'checkout') ?></div>
             <div class="full"><label for="address">Address (house no., street, area, landmark)</label><input id="address" type="text" name="address" value="<?= e($f['address']) ?>" autocomplete="street-address" required></div>
             <div><label for="city">City</label><input id="city" type="text" name="city" value="<?= e($f['city']) ?>" autocomplete="address-level2" required></div>
             <div><label for="pincode">PIN code</label><input id="pincode" type="text" name="pincode" value="<?= e($f['pincode']) ?>" inputmode="numeric" maxlength="6" autocomplete="postal-code" required></div>

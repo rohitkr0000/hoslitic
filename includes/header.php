@@ -65,7 +65,7 @@ function blog_card(array $bp): void
 <link rel="stylesheet" href="<?= e(url('assets/css/style.css')) ?>?v=9">
 <link rel="stylesheet" href="<?= e(url('assets/css/motion.css')) ?>?v=8">
 <link rel="stylesheet" href="<?= e(url('assets/css/fx.css')) ?>?v=7">
-<link rel="stylesheet" href="<?= e(url('assets/css/screens.css')) ?>?v=8">
+<link rel="stylesheet" href="<?= e(url('assets/css/screens.css')) ?>?v=9">
 <link rel="stylesheet" href="<?= e(url('assets/css/theme.css')) ?>?v=17">
 <script>
 document.documentElement.classList.add('js');

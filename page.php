@@ -15,7 +15,7 @@ require __DIR__ . '/includes/header.php';
 <section class="page-head"><div class="container"><?= breadcrumbs([$page['title'] => null]) ?><h1><?= e($page['title']) ?></h1></div></section>
 <section class="section" style="padding-top:40px">
   <div class="narrow content card">
-    <?= page_fill($page['content']) /* HTML authored by the store admin */ ?>
+    <?= clean_links(page_fill($page['content'])) /* HTML authored by the store admin */ ?>
   </div>
 </section>
 <?php require __DIR__ . '/includes/footer.php'; ?>

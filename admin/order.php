@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/_layout.php';
-require ROOT_PATH . '/includes/fship.php';
+require ROOT_PATH . '/includes/delhivery.php';
 require ROOT_PATH . '/includes/razorpay.php';
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -8,6 +8,7 @@ $o = row('SELECT * FROM orders WHERE id = ?', [$id]);
 if (!$o) {
     redirect('admin/orders.php');
 }
+$isDelhivery = $o['awb'] !== '' && $o['courier'] === 'Delhivery';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (post('action') === 'update') {
@@ -85,31 +86,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             order_event($id, $newStatus === 'refunded' ? 'Refund initiated' : 'Return approved', $note);
             flash('success', $newStatus === 'refunded' ? ($refundId !== '' ? 'Razorpay refund created: ' . $refundId : 'Marked as refunded (COD – send the money to the customer manually).') : 'Return request approved.');
         }
-    } elseif (post('action') === 'fship_create' && fship_enabled() && $o['awb'] === '') {
+    } elseif (post('action') === 'delhivery_create' && delhivery_enabled() && $o['awb'] === '') {
         confirm_order($id);
-        $res = fship_create_shipment($o, order_items($id));
+        $res = delhivery_create_shipment($o, order_items($id));
         if ($res['ok']) {
-            q("UPDATE orders SET courier = 'Fship', awb = ?, tracking_url = ?, status = IF(status IN ('pending', 'confirmed'), 'packed', status), updated_at = NOW() WHERE id = ?",
-                [$res['awb'], full_url('track-order.php?order=' . urlencode($o['order_no']) . '&phone=' . urlencode($o['phone'])), $id]);
-            notify_order_update($id, 'Order packed', 'Your order has been packed and handed to our courier partner for dispatch.');
-            flash('success', 'Fship shipment created. Waybill ' . $res['awb'] . '. Print the label and hand the parcel over at pickup.');
+            q("UPDATE orders SET courier = 'Delhivery', awb = ?, tracking_url = ?, status = IF(status IN ('pending', 'confirmed'), 'packed', status), updated_at = NOW() WHERE id = ?",
+                [$res['awb'], delhivery_track_link($res['awb']), $id]);
+            notify_order_update($id, 'Order packed', 'Your order has been packed and handed to Delhivery for dispatch.');
+            flash('success', 'Delhivery shipment created. Waybill ' . $res['awb'] . '. Print the label and hand the parcel over at pickup.');
         } else {
-            flash('error', 'Fship: ' . $res['error']);
+            flash('error', 'Delhivery: ' . $res['error']);
         }
-    } elseif (post('action') === 'fship_label' && $o['awb'] !== '' && $o['courier'] === 'Fship') {
-        $link = fship_label_url($o['awb']);
+    } elseif (post('action') === 'delhivery_label' && $isDelhivery) {
+        $link = delhivery_label_url($o['awb']);
         if ($link) {
             header('Location: ' . $link);
             exit;
         }
-        flash('error', 'Fship did not return a label for this waybill. You can also print it from the Fship panel.');
-    } elseif (post('action') === 'fship_cancel' && $o['awb'] !== '' && $o['courier'] === 'Fship') {
-        $res = fship_cancel($o['awb']);
+        flash('error', 'Delhivery did not return a label for this waybill. You can also print it from the Delhivery panel.');
+    } elseif (post('action') === 'delhivery_cancel' && $isDelhivery) {
+        $res = delhivery_cancel($o['awb']);
         if ($res['ok']) {
             q("UPDATE orders SET awb = '', tracking_url = '', courier = '', status = IF(status IN ('packed', 'shipped'), 'confirmed', status), updated_at = NOW() WHERE id = ?", [$id]);
-            flash('success', 'Fship shipment cancelled. You can create a new one if needed.');
+            flash('success', 'Delhivery shipment cancelled. You can create a new one if needed.');
         } else {
-            flash('error', 'Fship: ' . $res['error']);
+            flash('error', 'Delhivery: ' . $res['error']);
         }
     }
     redirect('admin/order.php?id=' . $id);
@@ -117,8 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $items = order_items($id);
 $returns = rows('SELECT * FROM return_requests WHERE order_id = ? ORDER BY id DESC', [$id]);
-$isFship = $o['awb'] !== '' && $o['courier'] === 'Fship';
-$track = ($isFship && fship_enabled()) ? fship_track($o['awb']) : null;
+$track = ($isDelhivery && delhivery_enabled()) ? delhivery_track($o['awb']) : null;
 admin_header('Order ' . $o['order_no'], 'orders');
 ?>
 <div class="top">
@@ -194,7 +194,7 @@ admin_header('Order ' . $o['order_no'], 'orders');
     <div><label>Payment status</label><select name="payment_status">
       <?php foreach (payment_statuses() as $k => $label): ?><option value="<?= e($k) ?>" <?= $o['payment_status'] === $k ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?>
     </select></div>
-    <div><label>Courier</label><input type="text" name="courier" value="<?= e($o['courier']) ?>" placeholder="e.g. Fship"></div>
+    <div><label>Courier</label><input type="text" name="courier" value="<?= e($o['courier']) ?>" placeholder="e.g. Delhivery"></div>
     <div><label>Tracking / AWB number</label><input type="text" name="awb" value="<?= e($o['awb']) ?>"></div>
     <div class="full"><label>Tracking link</label><input type="text" name="tracking_url" value="<?= e($o['tracking_url']) ?>" placeholder="https://…"></div>
   </div>
@@ -203,17 +203,18 @@ admin_header('Order ' . $o['order_no'], 'orders');
 </form>
 
 <div class="card">
-  <h2>Fship <?= fship_enabled() ? '<span class="badge">' . (setting('fship_live', '1') === '1' ? 'Live' : 'Test mode') . '</span>' : '' ?></h2>
-  <?php if (!fship_enabled()): ?>
-    <p class="muted">Add your Fship API key and pickup warehouse in <a href="<?= e(url('admin/settings.php')) ?>">Settings</a> to create shipments and labels from here.</p>
-  <?php elseif ($o['awb'] !== '' && !$isFship): ?>
-    <p class="muted">This order was shipped with <?= e($o['courier'] ?: 'another courier') ?> (tracking no. <?= e($o['awb']) ?>), so it is managed outside Fship.</p>
+  <h2>Delhivery <?= delhivery_enabled() ? '<span class="badge">' . (setting('delhivery_live') === '1' ? 'Live' : 'Test mode') . '</span>' : '' ?></h2>
+  <?php if (!delhivery_enabled()): ?>
+    <p class="muted">Add your Delhivery API token and pickup location in <a href="<?= e(url('admin/settings.php')) ?>">Settings</a> to create shipments and labels from here.</p>
+  <?php elseif ($o['awb'] !== '' && !$isDelhivery): ?>
+    <p class="muted">This order was shipped with <?= e($o['courier'] ?: 'another courier') ?> (tracking no. <?= e($o['awb']) ?>), so it is managed outside Delhivery.</p>
   <?php elseif ($o['awb'] !== ''): ?>
     <p>Waybill <strong><?= e($o['awb']) ?></strong><?= $track && $track['status'] !== '' ? ' — current status: <strong>' . e($track['status']) . '</strong>' : '' ?></p>
-    <form class="inline" method="post" target="_blank"><?= csrf_field() ?><input type="hidden" name="action" value="fship_label">
+    <form class="inline" method="post" target="_blank"><?= csrf_field() ?><input type="hidden" name="action" value="delhivery_label">
       <button class="btn" type="submit">Print shipping label</button>
     </form>
-    <form class="inline" method="post" onsubmit="return confirm('Cancel this Fship shipment?')"><?= csrf_field() ?><input type="hidden" name="action" value="fship_cancel">
+    <a class="btn alt" href="<?= e(delhivery_track_link($o['awb'])) ?>" target="_blank" rel="noopener">Track on Delhivery</a>
+    <form class="inline" method="post" onsubmit="return confirm('Cancel this Delhivery shipment?')"><?= csrf_field() ?><input type="hidden" name="action" value="delhivery_cancel">
       <button class="btn warn" type="submit">Cancel shipment</button>
     </form>
     <?php if ($track && $track['scans']): ?>
@@ -227,10 +228,9 @@ admin_header('Order ' . $o['order_no'], 'orders');
     <p class="muted">This order is <?= e($o['status']) ?>.</p>
   <?php else: ?>
     <?php if ($o['payment_method'] === 'razorpay' && $o['payment_status'] !== 'paid'): ?><p class="flash flash-error">This online order is not paid yet — check the payment before shipping.</p><?php endif; ?>
-    <?php if (setting('fship_warehouse_id') === ''): ?><p class="flash flash-error">Add your Fship pickup warehouse ID in Settings before creating a shipment.</p><?php endif; ?>
-    <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="fship_create">
-      <button class="btn" type="submit">Create Fship shipment</button>
-      <span class="hint"><?= $o['payment_method'] === 'cod' ? 'COD – the courier will collect ' . money($o['total']) : 'Prepaid' ?> · pickup warehouse ID <?= e(setting('fship_warehouse_id') ?: '—') ?></span>
+    <form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="delhivery_create">
+      <button class="btn" type="submit">Create Delhivery shipment</button>
+      <span class="hint"><?= $o['payment_method'] === 'cod' ? 'COD – Delhivery will collect ' . money($o['total']) : 'Prepaid' ?> · pickup from “<?= e(setting('delhivery_pickup')) ?>”</span>
     </form>
   <?php endif; ?>
 </div>

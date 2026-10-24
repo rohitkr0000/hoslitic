@@ -33,11 +33,10 @@ function seed_database(PDO $pdo): void
         'razorpay_key_id' => '',
         'razorpay_key_secret' => '',
         'razorpay_webhook_secret' => '',
-        'fship_key' => '',
-        'fship_warehouse_id' => '',
-        'fship_pickup_pincode' => '',
-        'fship_mode' => 'Surface',
-        'fship_live' => '1',
+        'delhivery_token' => '',
+        'delhivery_pickup' => '',
+        'delhivery_mode' => 'Surface',
+        'delhivery_live' => '0',
         'disclaimer' => 'This product is not intended to diagnose, treat, cure or prevent any disease. Results may vary from person to person. Please consult your physician before use if you are pregnant, nursing, on medication or have a medical condition.',
     ];
     $st = $pdo->prepare('INSERT INTO settings (skey, svalue) VALUES (?, ?) ON DUPLICATE KEY UPDATE skey = skey');
